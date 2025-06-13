@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, ArrowRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthPageProps {
@@ -41,6 +41,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
     }
   };
 
+  const handleSkipToDashboard = async () => {
+    // Use the demo login to skip authentication
+    const user = await login('demo@skilldom.com', 'demo123');
+    if (user) {
+      onAuthSuccess();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
@@ -64,6 +72,30 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         </div>
 
         <div className="glass-effect rounded-2xl p-8 shadow-2xl">
+          {/* Skip to Dashboard Button */}
+          <div className="mb-6">
+            <button
+              onClick={handleSkipToDashboard}
+              disabled={loading}
+              className="w-full flex items-center justify-center space-x-2 px-4 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg shadow-green-500/25"
+            >
+              <ArrowRight className="h-5 w-5" />
+              <span>{loading ? 'Loading...' : 'Skip to Dashboard'}</span>
+            </button>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Quick access to explore the platform
+            </p>
+          </div>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-gray-900 text-gray-400">Or sign in normally</span>
+            </div>
+          </div>
+
           {/* Demo Credentials Info */}
           {isLogin && (
             <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-xl">
