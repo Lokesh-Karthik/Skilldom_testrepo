@@ -38,6 +38,20 @@ export const useAuth = () => {
     }
   };
 
+  const demoLogin = async () => {
+    setLoading(true);
+    try {
+      const user = await mockAuth.demoLogin();
+      setUser(user);
+      return user;
+    } catch (error) {
+      console.error('Demo login error:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (userData: Omit<User, 'id' | 'connections' | 'pendingRequests' | 'sentRequests' | 'createdAt'>) => {
     setLoading(true);
     try {
@@ -62,6 +76,7 @@ export const useAuth = () => {
     loading,
     login,
     loginWithGoogle,
+    demoLogin,
     register,
     logout,
     isAuthenticated: !!user

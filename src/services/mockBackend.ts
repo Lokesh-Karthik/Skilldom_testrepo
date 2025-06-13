@@ -5,7 +5,67 @@ import { User, ConnectionRequest, Message, Chat, SearchFilters } from '../types'
 // ===========================
 
 let users: User[] = [
-  // ... [Same user data as before, unchanged for brevity]
+  {
+    id: '1',
+    email: 'alice@example.com',
+    name: 'Alice Johnson',
+    dateOfBirth: '1995-03-15',
+    gender: 'female',
+    schoolOrJob: 'Software Engineer at TechCorp',
+    location: 'San Francisco, CA',
+    bio: 'Passionate about web development and teaching others. Love hiking and photography in my free time.',
+    skillsToTeach: [
+      { name: 'React', rating: 5, description: 'Expert in React development with 5+ years experience' },
+      { name: 'TypeScript', rating: 4, description: 'Strong TypeScript skills for scalable applications' }
+    ],
+    skillsToLearn: ['Python', 'Machine Learning'],
+    interests: ['Photography', 'Hiking', 'Cooking'],
+    connections: ['2'],
+    pendingRequests: [],
+    sentRequests: [],
+    createdAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: '2',
+    email: 'bob@example.com',
+    name: 'Bob Smith',
+    dateOfBirth: '1990-07-20',
+    gender: 'male',
+    schoolOrJob: 'Data Scientist at DataCorp',
+    location: 'New York, NY',
+    bio: 'Data science enthusiast with a passion for AI and machine learning. Always excited to share knowledge.',
+    skillsToTeach: [
+      { name: 'Python', rating: 5, description: 'Expert Python developer with ML experience' },
+      { name: 'Machine Learning', rating: 4, description: 'Practical ML applications and algorithms' }
+    ],
+    skillsToLearn: ['JavaScript', 'React'],
+    interests: ['Gaming', 'Reading', 'Basketball'],
+    connections: ['1'],
+    pendingRequests: [],
+    sentRequests: [],
+    createdAt: '2024-01-10T10:00:00Z'
+  },
+  {
+    id: 'demo',
+    email: 'demo@skilldom.com',
+    name: 'Sarah Chen',
+    dateOfBirth: '1992-08-12',
+    gender: 'female',
+    schoolOrJob: 'UX Designer at InnovateCorp',
+    location: 'Seattle, WA',
+    bio: 'Creative UX designer passionate about user-centered design and mentoring aspiring designers. Love exploring new design tools and methodologies.',
+    skillsToTeach: [
+      { name: 'UI/UX Design', rating: 5, description: 'Expert in user experience design with 6+ years in the industry' },
+      { name: 'Figma', rating: 5, description: 'Advanced Figma skills for prototyping and design systems' },
+      { name: 'Design Thinking', rating: 4, description: 'Facilitating design thinking workshops and processes' }
+    ],
+    skillsToLearn: ['Frontend Development', 'Motion Graphics', 'Product Management'],
+    interests: ['Digital Art', 'Traveling', 'Yoga', 'Sustainable Design'],
+    connections: ['1', '2'],
+    pendingRequests: [],
+    sentRequests: [],
+    createdAt: '2024-01-01T10:00:00Z'
+  }
 ];
 
 let connectionRequests: ConnectionRequest[] = [];
@@ -52,6 +112,17 @@ export const mockAuth = {
 
   async login(email: string, password: string): Promise<User | null> {
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Demo user credentials
+    if (email === 'demo@skilldom.com' && password === 'demo123') {
+      const demoUser = users.find(u => u.id === 'demo');
+      if (demoUser) {
+        this.currentUser = demoUser;
+        return demoUser;
+      }
+    }
+    
+    // Regular user lookup
     const user = users.find(u => u.email === email);
     if (user) {
       this.currentUser = user;
