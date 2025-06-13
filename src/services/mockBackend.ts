@@ -46,25 +46,24 @@ let users: User[] = [
     createdAt: '2024-01-10T10:00:00Z'
   },
   {
-    id: 'demo',
-    email: 'demo@skilldom.com',
-    name: 'Sarah Chen',
-    dateOfBirth: '1992-08-12',
+    id: '3',
+    email: 'emma@example.com',
+    name: 'Emma Davis',
+    dateOfBirth: '1993-11-08',
     gender: 'female',
-    schoolOrJob: 'UX Designer at InnovateCorp',
-    location: 'Seattle, WA',
-    bio: 'Creative UX designer passionate about user-centered design and mentoring aspiring designers. Love exploring new design tools and methodologies.',
+    schoolOrJob: 'Graphic Designer at CreativeCorp',
+    location: 'Los Angeles, CA',
+    bio: 'Creative graphic designer with a passion for visual storytelling and brand identity.',
     skillsToTeach: [
-      { name: 'UI/UX Design', rating: 5, description: 'Expert in user experience design with 6+ years in the industry' },
-      { name: 'Figma', rating: 5, description: 'Advanced Figma skills for prototyping and design systems' },
-      { name: 'Design Thinking', rating: 4, description: 'Facilitating design thinking workshops and processes' }
+      { name: 'Graphic Design', rating: 5, description: 'Professional graphic design with 7+ years experience' },
+      { name: 'Adobe Creative Suite', rating: 5, description: 'Expert in Photoshop, Illustrator, and InDesign' }
     ],
-    skillsToLearn: ['Frontend Development', 'Motion Graphics', 'Product Management'],
-    interests: ['Digital Art', 'Traveling', 'Yoga', 'Sustainable Design'],
-    connections: ['1', '2'],
+    skillsToLearn: ['Web Design', 'Animation'],
+    interests: ['Art', 'Music', 'Travel'],
+    connections: [],
     pendingRequests: [],
     sentRequests: [],
-    createdAt: '2024-01-01T10:00:00Z'
+    createdAt: '2024-01-12T10:00:00Z'
   }
 ];
 
@@ -112,26 +111,19 @@ export const mockAuth = {
 
   async login(email: string, password: string): Promise<User | null> {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check for demo user credentials
-    if (email === 'demo@skilldom.com' && password === 'demo123') {
-      const demoUser = users.find(u => u.id === 'demo');
-      if (demoUser) {
-        this.currentUser = demoUser;
-        return demoUser;
-      }
-    }
-    
-    // Check for other users by email
     const user = users.find(u => u.email === email);
     if (user) {
-      // In a real app, you'd verify the password hash
-      // For demo purposes, we'll accept any password for existing users
       this.currentUser = user;
       return user;
     }
-    
     return null;
+  },
+
+  async loginWithGoogle(): Promise<User | null> {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const user = users[0];
+    this.currentUser = user;
+    return user;
   },
 
   async demoLogin(): Promise<User | null> {
@@ -146,13 +138,6 @@ export const mockAuth = {
 
   async register(userData: Omit<User, 'id' | 'connections' | 'pendingRequests' | 'sentRequests' | 'createdAt'>): Promise<User> {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if email already exists
-    const existingUser = users.find(u => u.email === userData.email);
-    if (existingUser) {
-      throw new Error('Email already exists');
-    }
-    
     const newUser: User = {
       ...userData,
       id: Date.now().toString(),
@@ -161,7 +146,6 @@ export const mockAuth = {
       sentRequests: [],
       createdAt: new Date().toISOString()
     };
-    
     users.push(newUser);
     this.currentUser = newUser;
     return newUser;
@@ -215,19 +199,6 @@ export const mockUserService = {
       );
     }
 
-    if (filters.ageRange) {
-      filteredUsers = filteredUsers.filter(u => {
-        const today = new Date();
-        const birthDate = new Date(u.dateOfBirth);
-        const age = today.getFullYear() - birthDate.getFullYear();
-        return age >= filters.ageRange![0] && age <= filters.ageRange![1];
-      });
-    }
-
-    if (filters.gender) {
-      filteredUsers = filteredUsers.filter(u => u.gender === filters.gender);
-    }
-
     return filteredUsers;
   },
 
@@ -241,10 +212,6 @@ export const mockUserService = {
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
       users[userIndex] = { ...users[userIndex], ...updates };
-      // Update current user if it's the same user
-      if (mockAuth.currentUser?.id === userId) {
-        mockAuth.currentUser = users[userIndex];
-      }
       return users[userIndex];
     }
     return null;
