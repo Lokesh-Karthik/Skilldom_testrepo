@@ -1,6 +1,9 @@
 import { User, ConnectionRequest, Message, Chat, SearchFilters } from '../types';
 
-// Mock data storage
+// ===========================
+// MOCK DATA STORAGE
+// ===========================
+
 let users: User[] = [
   {
     id: '1',
@@ -12,8 +15,16 @@ let users: User[] = [
     location: 'San Francisco, CA',
     bio: 'Passionate about web development and teaching others. Love hiking and photography in my free time.',
     skillsToTeach: [
-      { name: 'React', rating: 5, description: 'Expert in React development with 5+ years experience' },
-      { name: 'TypeScript', rating: 4, description: 'Strong TypeScript skills for scalable applications' }
+      { 
+        name: 'React', 
+        rating: 5, 
+        description: 'Expert in React development with 5+ years experience' 
+      },
+      { 
+        name: 'TypeScript', 
+        rating: 4, 
+        description: 'Strong TypeScript skills for scalable applications' 
+      }
     ],
     skillsToLearn: ['Python', 'Machine Learning'],
     interests: ['Photography', 'Hiking', 'Cooking'],
@@ -32,8 +43,16 @@ let users: User[] = [
     location: 'New York, NY',
     bio: 'Data science enthusiast with a passion for AI and machine learning. Always excited to share knowledge.',
     skillsToTeach: [
-      { name: 'Python', rating: 5, description: 'Expert Python developer with ML experience' },
-      { name: 'Machine Learning', rating: 4, description: 'Practical ML applications and algorithms' }
+      { 
+        name: 'Python', 
+        rating: 5, 
+        description: 'Expert Python developer with ML experience' 
+      },
+      { 
+        name: 'Machine Learning', 
+        rating: 4, 
+        description: 'Practical ML applications and algorithms' 
+      }
     ],
     skillsToLearn: ['JavaScript', 'React'],
     interests: ['Gaming', 'Reading', 'Basketball'],
@@ -41,6 +60,39 @@ let users: User[] = [
     pendingRequests: [],
     sentRequests: [],
     createdAt: '2024-01-10T10:00:00Z'
+  },
+  {
+    id: 'demo',
+    email: 'demo@skilldom.com',
+    name: 'Sarah Chen',
+    dateOfBirth: '1992-08-12',
+    gender: 'female',
+    schoolOrJob: 'UX Designer at InnovateCorp',
+    location: 'Seattle, WA',
+    bio: 'Creative UX designer passionate about user-centered design and mentoring aspiring designers. Love exploring new design tools and methodologies.',
+    skillsToTeach: [
+      { 
+        name: 'UI/UX Design', 
+        rating: 5, 
+        description: 'Expert in user experience design with 6+ years in the industry' 
+      },
+      { 
+        name: 'Figma', 
+        rating: 5, 
+        description: 'Advanced Figma skills for prototyping and design systems' 
+      },
+      { 
+        name: 'Design Thinking', 
+        rating: 4, 
+        description: 'Facilitating design thinking workshops and processes' 
+      }
+    ],
+    skillsToLearn: ['Frontend Development', 'Motion Graphics', 'Product Management'],
+    interests: ['Digital Art', 'Traveling', 'Yoga', 'Sustainable Design'],
+    connections: ['1', '2'],
+    pendingRequests: [],
+    sentRequests: [],
+    createdAt: '2024-01-01T10:00:00Z'
   }
 ];
 
@@ -71,12 +123,15 @@ let chats: Chat[] = [
   }
 ];
 
-// Mock authentication
+// ===========================
+// AUTHENTICATION SERVICE
+// ===========================
+
 export const mockAuth = {
   currentUser: null as User | null,
   
   async login(email: string, password: string): Promise<User | null> {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
     const user = users.find(u => u.email === email);
     if (user) {
       this.currentUser = user;
@@ -87,10 +142,16 @@ export const mockAuth = {
   
   async loginWithGoogle(): Promise<User | null> {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    // Simulate Google login - in real app, this would use Google OAuth
-    const user = users[0]; // Return first user for demo
+    const user = users[0];
     this.currentUser = user;
     return user;
+  },
+
+  async demoLogin(): Promise<User | null> {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const demoUser = users.find(u => u.id === 'demo');
+    this.currentUser = demoUser || users[0];
+    return this.currentUser;
   },
   
   async register(userData: Omit<User, 'id' | 'connections' | 'pendingRequests' | 'sentRequests' | 'createdAt'>): Promise<User> {
@@ -113,7 +174,10 @@ export const mockAuth = {
   }
 };
 
-// Mock user service
+// ===========================
+// USER SERVICE
+// ===========================
+
 export const mockUserService = {
   async searchUsers(filters: SearchFilters): Promise<User[]> {
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -174,7 +238,10 @@ export const mockUserService = {
   }
 };
 
-// Mock connection service
+// ===========================
+// CONNECTION SERVICE
+// ===========================
+
 export const mockConnectionService = {
   async sendConnectionRequest(toUserId: string, message: string): Promise<boolean> {
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -259,7 +326,10 @@ export const mockConnectionService = {
   }
 };
 
-// Mock chat service
+// ===========================
+// CHAT SERVICE
+// ===========================
+
 export const mockChatService = {
   async getChats(userId: string): Promise<Chat[]> {
     await new Promise(resolve => setTimeout(resolve, 300));
