@@ -19,7 +19,10 @@ function App() {
   if (!isAuthenticated) {
     return (
       <AuthPage 
-        onAuthSuccess={() => {}}
+        onAuthSuccess={() => {
+          // Authentication successful - the useAuth hook will handle setting the user
+          // No additional action needed here since isAuthenticated will become true
+        }}
         onNeedProfile={() => setShowProfileSetup(true)}
       />
     );
