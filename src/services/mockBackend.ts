@@ -113,7 +113,7 @@ export const mockAuth = {
   async login(email: string, password: string): Promise<User | null> {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Demo user credentials
+    // Check for demo user credentials
     if (email === 'demo@skilldom.com' && password === 'demo123') {
       const demoUser = users.find(u => u.id === 'demo');
       if (demoUser) {
@@ -122,12 +122,13 @@ export const mockAuth = {
       }
     }
     
-    // Regular user lookup
+    // Check for other users (for future expansion)
     const user = users.find(u => u.email === email);
     if (user) {
       this.currentUser = user;
       return user;
     }
+    
     return null;
   },
 
@@ -136,16 +137,6 @@ export const mockAuth = {
     const user = users[0];
     this.currentUser = user;
     return user;
-  },
-
-  async demoLogin(): Promise<User | null> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const demoUser = users.find(u => u.id === 'demo');
-    if (demoUser) {
-      this.currentUser = demoUser;
-      return demoUser;
-    }
-    return null;
   },
 
   async register(userData: Omit<User, 'id' | 'connections' | 'pendingRequests' | 'sentRequests' | 'createdAt'>): Promise<User> {

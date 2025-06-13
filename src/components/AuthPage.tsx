@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, User } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthPageProps {
@@ -14,7 +14,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const { login, loginWithGoogle, demoLogin, loading } = useAuth();
+  const { login, loginWithGoogle, loading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,15 +41,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
     }
   };
 
-  const handleDemoLogin = async () => {
-    const user = await demoLogin();
-    if (user) {
-      onAuthSuccess();
-    } else {
-      setError('Demo login failed');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
@@ -73,34 +64,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         </div>
 
         <div className="glass-effect rounded-2xl p-8 shadow-2xl">
-          {/* Demo Login Info */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-xl">
-            <div className="flex items-center space-x-2 mb-2">
-              <User className="h-4 w-4 text-purple-400" />
-              <span className="text-sm font-medium text-purple-300">Demo Account</span>
+          {/* Demo Credentials Info */}
+          {isLogin && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-xl">
+              <div className="text-center">
+                <h4 className="text-sm font-medium text-purple-300 mb-2">Demo Credentials</h4>
+                <div className="text-xs text-gray-300 space-y-1">
+                  <p><span className="text-purple-400">Email:</span> demo@skilldom.com</p>
+                  <p><span className="text-cyan-400">Password:</span> demo123</p>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-gray-400 mb-2">
-              Email: demo@skilldom.com<br />
-              Password: demo123
-            </p>
-            <button
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-purple-600/80 to-cyan-600/80 text-white rounded-lg hover:from-purple-700/80 hover:to-cyan-700/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
-            >
-              <User className="h-4 w-4" />
-              <span>{loading ? 'Signing in...' : 'Try Demo Login'}</span>
-            </button>
-          </div>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-900 text-gray-400">Or sign in with your account</span>
-            </div>
-          </div>
+          )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
