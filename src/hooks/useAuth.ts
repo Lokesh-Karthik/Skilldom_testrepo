@@ -69,13 +69,6 @@ export const useAuth = () => {
         throw new Error(error);
       }
       
-      // Set user immediately without waiting for auth state change
-      if (user) {
-        console.log('✅ Login successful, setting user immediately');
-        setUser(user);
-        setLoading(false);
-      }
-      
       return user;
     } finally {
       setAuthLoading(false);
