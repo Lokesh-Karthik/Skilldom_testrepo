@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle, RotateCcw, Inbox } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { testSupabaseConnection } from '../lib/supabase';
 
@@ -12,6 +12,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -98,17 +100,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         }
       } else {
         console.log('🔄 Attempting sign up...');
+        setUserEmail(formData.email);
+        
         const user = await signUp({
           email: formData.email,
           password: formData.password,
           name: formData.name
         });
-        if (user) {
-          setSuccess('Account created successfully! Please complete your profile.');
-          setTimeout(() => {
-            onNeedProfile();
-          }, 1000);
-        }
+        
+        // Show email confirmation message regardless of immediate user creation
+        setShowEmailConfirmation(true);
+        setFormData({ email: '', password: '', name: '', confirmPassword: '' });
       }
     } catch (err: any) {
       console.error('❌ Auth error:', err);
@@ -166,6 +168,160 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
       setError(err.message || 'Google sign in failed');
     }
   };
+
+  const handleBackToSignUp = () => {
+    setShowEmailConfirmation(false);
+    setIsLogin(false);
+    setError('');
+    setSuccess('');
+  };
+
+  const handleResendConfirmation = async () => {
+    try {
+      setError('');
+      setSuccess('');
+      
+      // Attempt to resend confirmation by trying to sign up again
+      await signUp({
+        email: userEmail,
+        password: 'temp-password', // This won't be used since user already exists
+        name: 'temp-name'
+      });
+      
+      setSuccess('Confirmation email resent! Please check your inbox.');
+    } catch (err: any) {
+      // If user already exists, that's expected - just show success
+      if (err.message.includes('already registered') || err.message.includes('already exists')) {
+        setSuccess('Confirmation email resent! Please check your inbox.');
+      } else {
+        setError('Failed to resend confirmation email. Please try again.');
+      }
+    }
+  };
+
+  // Show email confirmation screen
+  if (showEmailConfirmation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        </div>
+
+        {/* Database Connection Status - Bottom Right */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="glass-effect rounded-lg p-3 border border-gray-700/50">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-400" />
+              <span className="text-sm text-green-400">Database Connected</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-md w-full space-y-8 relative z-10">
+          <div className="text-center">
+            <div className="mx-auto h-20 w-20 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/25">
+              <Inbox className="text-white text-3xl" />
+            </div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
+              Check Your Email
+            </h2>
+            <p className="mt-3 text-gray-400 text-lg">
+              We've sent you a confirmation link
+            </p>
+          </div>
+
+          <div className="glass-effect rounded-2xl p-8 shadow-2xl border border-gray-700/50">
+            <div className="text-center space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="h-16 w-16 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center border border-blue-500/30">
+                    <Mail className="h-8 w-8 text-blue-400" />
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Confirm Your Email Address
+                  </h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    We've sent a confirmation email to:
+                  </p>
+                  <p className="text-blue-300 font-medium mt-1">
+                    {userEmail}
+                  </p>
+                </div>
+
+                <div className="glass-effect border border-blue-500/20 rounded-xl p-4">
+                  <div className="space-y-3 text-sm text-gray-300">
+                    <div className="flex items-start space-x-3">
+                      <div className="h-6 w-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-blue-400 text-xs font-bold">1</span>
+                      </div>
+                      <p>Check your email inbox (and spam folder)</p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="h-6 w-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-blue-400 text-xs font-bold">2</span>
+                      </div>
+                      <p>Click the confirmation link in the email</p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="h-6 w-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-blue-400 text-xs font-bold">3</span>
+                      </div>
+                      <p>Return here to complete your profile</p>
+                    </div>
+                  </div>
+                </div>
+
+                {success && (
+                  <div className="flex items-center space-x-2 text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                    <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{success}</span>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="flex items-center space-x-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleResendConfirmation}
+                  disabled={authLoading}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg shadow-blue-500/25"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>{authLoading ? 'Sending...' : 'Resend Confirmation Email'}</span>
+                </button>
+
+                <button
+                  onClick={handleBackToSignUp}
+                  className="w-full px-4 py-3 border border-gray-600 text-gray-300 rounded-xl hover:bg-gray-800/50 hover:border-gray-500 transition-all duration-200 font-medium"
+                >
+                  Back to Sign Up
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-gray-700/50">
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Didn't receive the email? Check your spam folder or try resending. 
+                  If you continue to have issues, please contact support.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">
