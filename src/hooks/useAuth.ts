@@ -1,69 +1,118 @@
 import { useState, useEffect } from 'react';
 import { User } from '../types';
-import { mockAuth } from '../services/mockBackend';
+import { authService, SignUpData } from '../services/authService';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    setUser(mockAuth.currentUser);
+    // Get initial user
+    const getInitialUser = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error getting initial user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialUser();
+
+    // Listen to auth state changes
+    const { data: { subscription } } = authService.onAuthStateChange((user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setLoading(true);
+  const signUp = async (userData: SignUpData) => {
+    setAuthLoading(true);
     try {
-      const user = await mockAuth.login(email, password);
-      setUser(user);
+      const { user, error } = await authService.signUp(userData);
+      if (error) {
+        throw new Error(error);
+      }
       return user;
-    } catch (error) {
-      console.error('Login error:', error);
-      return null;
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    setAuthLoading(true);
+    try {
+      const { user, error } = await authService.signIn(email, password);
+      if (error) {
+        throw new Error(error);
+      }
+      return user;
+    } finally {
+      setAuthLoading(false);
     }
   };
 
   const loginWithGoogle = async () => {
-    setLoading(true);
+    setAuthLoading(true);
     try {
-      const user = await mockAuth.loginWithGoogle();
-      setUser(user);
-      return user;
-    } catch (error) {
-      console.error('Google login error:', error);
-      return null;
+      const { error } = await authService.signInWithGoogle();
+      if (error) {
+        throw new Error(error);
+      }
+      // For OAuth, the user will be set via the auth state change listener
+      return true;
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   };
 
-  const register = async (userData: Omit<User, 'id' | 'connections' | 'pendingRequests' | 'sentRequests' | 'createdAt'>) => {
-    setLoading(true);
+  const logout = async () => {
+    setAuthLoading(true);
     try {
-      const user = await mockAuth.register(userData);
-      setUser(user);
-      return user;
-    } catch (error) {
-      console.error('Registration error:', error);
-      return null;
+      const { error } = await authService.signOut();
+      if (error) {
+        throw new Error(error);
+      }
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   };
 
-  const logout = () => {
-    mockAuth.logout();
-    setUser(null);
+  const updateProfile = async (updates: Partial<User>) => {
+    if (!user) return null;
+    
+    setAuthLoading(true);
+    try {
+      const updatedUser = await authService.updateProfile(user.id, updates);
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
+      return updatedUser;
+    } finally {
+      setAuthLoading(false);
+    }
   };
+
+  // Legacy methods for backward compatibility
+  const register = signUp;
 
   return {
     user,
     loading,
+    authLoading,
+    signUp,
     login,
     loginWithGoogle,
-    register,
     logout,
+    updateProfile,
+    register, // Legacy
     isAuthenticated: !!user
   };
 };

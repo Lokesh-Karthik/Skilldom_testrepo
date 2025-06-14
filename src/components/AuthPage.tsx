@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthPageProps {
@@ -10,34 +10,80 @@ interface AuthPageProps {
 export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: '',
+    confirmPassword: ''
+  });
   const [error, setError] = useState('');
 
-  const { login, loginWithGoogle, loading } = useAuth();
+  const { login, signUp, loginWithGoogle, authLoading } = useAuth();
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (error) setError(''); // Clear error when user starts typing
+  };
+
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      setError('Email and password are required');
+      return false;
+    }
+
+    if (!isLogin) {
+      if (!formData.name) {
+        setError('Name is required for sign up');
+        return false;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return false;
+      }
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (isLogin) {
-      const user = await login(email, password);
-      if (user) {
-        onAuthSuccess();
+    if (!validateForm()) return;
+
+    try {
+      if (isLogin) {
+        const user = await login(formData.email, formData.password);
+        if (user) {
+          onAuthSuccess();
+        }
       } else {
-        setError('Invalid email or password');
+        const user = await signUp({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name
+        });
+        if (user) {
+          // For new users, show profile setup
+          onNeedProfile();
+        }
       }
-    } else {
-      onNeedProfile();
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication');
     }
   };
 
   const handleGoogleLogin = async () => {
-    const user = await loginWithGoogle();
-    if (user) {
-      onAuthSuccess();
-    } else {
-      setError('Google login failed');
+    try {
+      setError('');
+      await loginWithGoogle();
+      // The auth state change will handle the redirect
+    } catch (err: any) {
+      setError(err.message || 'Google sign in failed');
     }
   };
 
@@ -66,6 +112,27 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         <div className="glass-effect rounded-2xl p-8 shadow-2xl">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
+              {!isLogin && (
+                <div>
+                  <label htmlFor="name" className="sr-only">Full Name</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <UserPlus className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required={!isLogin}
+                      className="relative block w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 placeholder-gray-400 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Full name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label htmlFor="email" className="sr-only">Email address</label>
                 <div className="relative">
@@ -80,8 +147,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                     required
                     className="relative block w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 placeholder-gray-400 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                     placeholder="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                   />
                 </div>
               </div>
@@ -96,12 +163,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
                     required
                     className="relative block w-full pl-12 pr-12 py-4 bg-gray-800/50 border border-gray-700 placeholder-gray-400 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                     placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                   />
                   <button
                     type="button"
@@ -116,18 +183,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                   </button>
                 </div>
               </div>
+
+              {!isLogin && (
+                <div>
+                  <label htmlFor="confirmPassword" className="sr-only">Confirm Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      required={!isLogin}
+                      className="relative block w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 placeholder-gray-400 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Confirm password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {error && (
-              <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                {error}
+              <div className="flex items-center space-x-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={authLoading}
                 className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-purple-500/25"
               >
                 <span className="absolute left-0 inset-y-0 flex items-center pl-4">
@@ -137,7 +227,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                     <UserPlus className="h-5 w-5 text-purple-200 group-hover:text-purple-100" />
                   )}
                 </span>
-                {loading ? 'Please wait...' : (isLogin ? 'Sign in' : 'Sign up')}
+                {authLoading ? 'Please wait...' : (isLogin ? 'Sign in' : 'Sign up')}
               </button>
             </div>
 
@@ -155,7 +245,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  disabled={loading}
+                  disabled={authLoading}
                   className="w-full inline-flex justify-center py-4 px-4 border border-gray-700 rounded-xl shadow-sm bg-gray-800/50 text-sm font-medium text-gray-300 hover:bg-gray-700/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -172,7 +262,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError('');
+                  setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+                }}
                 className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors duration-200"
               >
                 {isLogin 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Calendar, MapPin, GraduationCap, Star, Plus, X, Sparkles } from 'lucide-react';
+import { User, Calendar, MapPin, GraduationCap, Star, Plus, X, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Skill } from '../types';
 
@@ -9,6 +9,7 @@ interface ProfileSetupProps {
 
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     dateOfBirth: '',
@@ -26,10 +27,11 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
   const [newLearnSkill, setNewLearnSkill] = useState('');
   const [newInterest, setNewInterest] = useState('');
 
-  const { register, loading } = useAuth();
+  const { updateProfile, authLoading, user } = useAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (error) setError('');
   };
 
   const addSkillToTeach = () => {
@@ -66,18 +68,28 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
   };
 
   const handleComplete = async () => {
-    const userData = {
-      ...formData,
-      email: 'new@example.com',
-      skillsToTeach,
-      skillsToLearn,
-      interests,
-      profileImage: undefined
-    };
+    if (!user) {
+      setError('User not found. Please try signing in again.');
+      return;
+    }
 
-    const user = await register(userData);
-    if (user) {
-      onComplete();
+    try {
+      setError('');
+      const updates = {
+        ...formData,
+        skillsToTeach,
+        skillsToLearn,
+        interests
+      };
+
+      const updatedUser = await updateProfile(updates);
+      if (updatedUser) {
+        onComplete();
+      } else {
+        setError('Failed to update profile. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while updating your profile');
     }
   };
 
@@ -132,6 +144,13 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
         </div>
 
         <div className="glass-effect rounded-2xl p-8 border border-gray-700/50">
+          {error && (
+            <div className="mb-6 flex items-center space-x-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {step === 1 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-semibold text-white mb-6">Basic Information</h2>
@@ -414,10 +433,10 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
             ) : (
               <button
                 onClick={handleComplete}
-                disabled={loading}
+                disabled={authLoading}
                 className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-green-500/25"
               >
-                {loading ? 'Creating Profile...' : 'Complete Profile'}
+                {authLoading ? 'Creating Profile...' : 'Complete Profile'}
               </button>
             )}
           </div>
