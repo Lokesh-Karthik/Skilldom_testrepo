@@ -227,7 +227,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
               <div>
                 <h3 className="text-lg font-medium text-purple-300 mb-4">Skills I can teach</h3>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input
                       type="text"
                       placeholder="Skill name"
@@ -247,6 +247,15 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
                         ))}
                       </select>
                     </div>
+                  </div>
+                  <div className="flex space-x-3">
+                    <input
+                      type="text"
+                      placeholder="Describe your skill (optional)"
+                      className="flex-1 p-4 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-400"
+                      value={newSkill.description}
+                      onChange={(e) => setNewSkill(prev => ({ ...prev, description: e.target.value }))}
+                    />
                     <button
                       type="button"
                       onClick={addSkillToTeach}
@@ -255,13 +264,6 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
                       <Plus className="h-5 w-5" />
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Brief description of your expertise"
-                    className="w-full p-4 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-400"
-                    value={newSkill.description}
-                    onChange={(e) => setNewSkill(prev => ({ ...prev, description: e.target.value }))}
-                  />
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -280,7 +282,9 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
                               ))}
                             </div>
                           </div>
-                          <p className="text-sm text-gray-400">{skill.description}</p>
+                          {skill.description && (
+                            <p className="text-sm text-gray-400">{skill.description}</p>
+                          )}
                         </div>
                         <button
                           onClick={() => removeSkillToTeach(index)}
