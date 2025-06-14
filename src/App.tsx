@@ -6,21 +6,26 @@ import { testSupabaseConnection } from './lib/supabase';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [connectionChecked, setConnectionChecked] = useState(false);
 
   // Test Supabase connection on app start
   useEffect(() => {
     const checkConnection = async () => {
-      await testSupabaseConnection();
-      setConnectionChecked(true);
+      try {
+        await testSupabaseConnection();
+      } catch (error) {
+        console.error('Database connection failed:', error);
+      } finally {
+        setConnectionChecked(true);
+      }
     };
     checkConnection();
   }, []);
 
-  // Show loading spinner while checking connection
-  if (!connectionChecked) {
+  // Show loading spinner while checking auth and connection
+  if (loading || !connectionChecked) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -28,7 +33,9 @@ function App() {
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500 mx-auto"></div>
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 blur-xl"></div>
           </div>
-          <p className="text-gray-400 text-lg">Connecting to database...</p>
+          <p className="text-gray-400 text-lg">
+            {!connectionChecked ? 'Connecting to database...' : 'Loading...'}
+          </p>
         </div>
       </div>
     );
@@ -45,10 +52,18 @@ function App() {
 
   // Show dashboard if authenticated and profile is complete
   if (isAuthenticated && user) {
+    // Check if profile needs completion
+    if (!user.name || !user.location) {
+      return (
+        <ProfileSetup 
+          onComplete={() => setShowProfileSetup(false)} 
+        />
+      );
+    }
     return <Dashboard />;
   }
 
-  // Default to auth page
+  // Default to auth page for unauthenticated users
   return (
     <AuthPage 
       onAuthSuccess={() => {

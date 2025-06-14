@@ -15,6 +15,8 @@ export const useAuth = () => {
         setUser(currentUser);
       } catch (error) {
         console.error('Error getting initial user:', error);
+        // If user not found, don't throw error - just set to null
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -51,6 +53,10 @@ export const useAuth = () => {
     try {
       const { user, error } = await authService.signIn(email, password);
       if (error) {
+        // If user not found in database, suggest sign up
+        if (error.includes('User profile not found') || error.includes('Invalid login credentials')) {
+          throw new Error('USER_NOT_FOUND');
+        }
         throw new Error(error);
       }
       return user;

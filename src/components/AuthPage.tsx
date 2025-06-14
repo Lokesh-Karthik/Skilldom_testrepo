@@ -26,8 +26,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
   // Test Supabase connection on component mount
   useEffect(() => {
     const checkConnection = async () => {
-      const isConnected = await testSupabaseConnection();
-      setConnectionStatus(isConnected ? 'connected' : 'error');
+      try {
+        await testSupabaseConnection();
+        setConnectionStatus('connected');
+      } catch (error) {
+        setConnectionStatus('error');
+      }
     };
     checkConnection();
   }, []);
@@ -107,7 +111,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
       }
     } catch (err: any) {
       console.error('❌ Auth error:', err);
-      setError(err.message || 'An error occurred during authentication');
+      
+      // Handle specific error cases
+      if (err.message === 'USER_NOT_FOUND' && isLogin) {
+        setError('Account not found. Would you like to create a new account?');
+        // Auto-switch to sign up mode
+        setTimeout(() => {
+          setIsLogin(false);
+          setError('');
+          setSuccess('Switched to sign up mode. Please create your account.');
+        }, 2000);
+      } else {
+        setError(err.message || 'An error occurred during authentication');
+      }
     }
   };
 
@@ -139,6 +155,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
+      {/* Database Connection Status - Bottom Right */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="glass-effect rounded-lg p-3 border border-gray-700/50">
+          <div className="flex items-center space-x-2">
+            {connectionStatus === 'checking' && (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-500/30 border-t-yellow-500"></div>
+                <span className="text-sm text-yellow-400">Checking...</span>
+              </>
+            )}
+            {connectionStatus === 'connected' && (
+              <>
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <span className="text-sm text-green-400">Database Connected</span>
+              </>
+            )}
+            {connectionStatus === 'error' && (
+              <>
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <span className="text-sm text-red-400">Connection Failed</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="text-center">
           <div className="mx-auto h-20 w-20 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-purple-500/25">
@@ -150,28 +192,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
           <p className="mt-3 text-gray-400 text-lg">
             {isLogin ? 'Sign in to your account' : 'Create a new account'}
           </p>
-          
-          {/* Connection Status */}
-          <div className="mt-4 flex items-center justify-center space-x-2">
-            {connectionStatus === 'checking' && (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-500/30 border-t-yellow-500"></div>
-                <span className="text-sm text-yellow-400">Checking database connection...</span>
-              </>
-            )}
-            {connectionStatus === 'connected' && (
-              <>
-                <CheckCircle className="h-4 w-4 text-green-400" />
-                <span className="text-sm text-green-400">Database connected</span>
-              </>
-            )}
-            {connectionStatus === 'error' && (
-              <>
-                <AlertCircle className="h-4 w-4 text-red-400" />
-                <span className="text-sm text-red-400">Database connection failed</span>
-              </>
-            )}
-          </div>
         </div>
 
         <div className="glass-effect rounded-2xl p-8 shadow-2xl">
