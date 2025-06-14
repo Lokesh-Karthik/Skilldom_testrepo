@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { AuthPage } from './components/AuthPage';
-import { ProfileSetup } from './components/ProfileSetup';
-import { Dashboard } from './components/Dashboard';
-import { testSupabaseConnection } from './lib/supabase';
-import { useAuth } from './hooks/useAuth';
+import { AuthPage } from './src/components/AuthPage';
+import { ProfileSetup } from './src/components/ProfileSetup';
+import { Dashboard } from './src/components/Dashboard';
+import { testSupabaseConnection } from './src/lib/supabase';
+import { useAuth } from './src/hooks/useAuth';
 
 function App() {
   const { user, isAuthenticated, loading } = useAuth();

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Search, MessageCircle, Users, User, Menu, X, Sparkles, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { UserSearch } from './UserSearch';
-import { ConnectionRequests } from './ConnectionRequests';
-import { ChatInterface } from './ChatInterface';
-import { UserProfile } from './UserProfile';
+import { UserSearch } from '../../UserSearch';
+import { ConnectionRequests } from '../../ConnectionRequests';
+import { ChatInterface } from '../../ChatInterface';
+import { UserProfile } from '../../UserProfile';
 
 type TabType = 'discover' | 'connections' | 'messages' | 'profile';
 
