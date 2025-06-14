@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { testSupabaseConnection } from '../lib/supabase';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -17,17 +18,36 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
   const { login, signUp, loginWithGoogle, authLoading } = useAuth();
+
+  // Test Supabase connection on component mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      const isConnected = await testSupabaseConnection();
+      setConnectionStatus(isConnected ? 'connected' : 'error');
+    };
+    checkConnection();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError(''); // Clear error when user starts typing
+    if (success) setSuccess(''); // Clear success when user starts typing
   };
 
   const validateForm = () => {
     if (!formData.email || !formData.password) {
       setError('Email and password are required');
+      return false;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
       return false;
     }
 
@@ -52,27 +72,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
+
+    if (connectionStatus !== 'connected') {
+      setError('Database connection error. Please check your Supabase configuration.');
+      return;
+    }
 
     if (!validateForm()) return;
 
     try {
       if (isLogin) {
+        console.log('🔄 Attempting login...');
         const user = await login(formData.email, formData.password);
         if (user) {
-          onAuthSuccess();
+          setSuccess('Login successful! Redirecting...');
+          setTimeout(() => {
+            onAuthSuccess();
+          }, 1000);
         }
       } else {
+        console.log('🔄 Attempting sign up...');
         const user = await signUp({
           email: formData.email,
           password: formData.password,
           name: formData.name
         });
         if (user) {
-          // For new users, show profile setup
-          onNeedProfile();
+          setSuccess('Account created successfully! Please complete your profile.');
+          setTimeout(() => {
+            onNeedProfile();
+          }, 1000);
         }
       }
     } catch (err: any) {
+      console.error('❌ Auth error:', err);
       setError(err.message || 'An error occurred during authentication');
     }
   };
@@ -80,9 +114,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
   const handleGoogleLogin = async () => {
     try {
       setError('');
+      setSuccess('');
+      
+      if (connectionStatus !== 'connected') {
+        setError('Database connection error. Please check your Supabase configuration.');
+        return;
+      }
+
+      console.log('🔄 Attempting Google login...');
       await loginWithGoogle();
-      // The auth state change will handle the redirect
+      setSuccess('Redirecting to Google...');
     } catch (err: any) {
+      console.error('❌ Google login error:', err);
       setError(err.message || 'Google sign in failed');
     }
   };
@@ -107,6 +150,28 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
           <p className="mt-3 text-gray-400 text-lg">
             {isLogin ? 'Sign in to your account' : 'Create a new account'}
           </p>
+          
+          {/* Connection Status */}
+          <div className="mt-4 flex items-center justify-center space-x-2">
+            {connectionStatus === 'checking' && (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-500/30 border-t-yellow-500"></div>
+                <span className="text-sm text-yellow-400">Checking database connection...</span>
+              </>
+            )}
+            {connectionStatus === 'connected' && (
+              <>
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <span className="text-sm text-green-400">Database connected</span>
+              </>
+            )}
+            {connectionStatus === 'error' && (
+              <>
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <span className="text-sm text-red-400">Database connection failed</span>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="glass-effect rounded-2xl p-8 shadow-2xl">
@@ -214,10 +279,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
               </div>
             )}
 
+            {success && (
+              <div className="flex items-center space-x-2 text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{success}</span>
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"
-                disabled={authLoading}
+                disabled={authLoading || connectionStatus !== 'connected'}
                 className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-purple-500/25"
               >
                 <span className="absolute left-0 inset-y-0 flex items-center pl-4">
@@ -245,7 +317,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  disabled={authLoading}
+                  disabled={authLoading || connectionStatus !== 'connected'}
                   className="w-full inline-flex justify-center py-4 px-4 border border-gray-700 rounded-xl shadow-sm bg-gray-800/50 text-sm font-medium text-gray-300 hover:bg-gray-700/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -265,6 +337,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError('');
+                  setSuccess('');
                   setFormData({ email: '', password: '', name: '', confirmPassword: '' });
                 }}
                 className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors duration-200"

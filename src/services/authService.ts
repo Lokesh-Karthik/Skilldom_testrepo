@@ -21,16 +21,22 @@ export interface SignUpData {
 class AuthService {
   async signUp(userData: SignUpData): Promise<AuthResponse> {
     try {
+      console.log('🔄 Starting sign up process...');
+      
       // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            name: userData.name
+          }
         }
       });
 
       if (authError) {
+        console.error('❌ Auth sign up error:', authError);
         return { user: null, error: authError.message };
       }
 
@@ -38,7 +44,9 @@ class AuthService {
         return { user: null, error: 'Failed to create user account' };
       }
 
-      // Create user profile
+      console.log('✅ Auth user created:', authData.user.id);
+
+      // Create user profile in our custom table
       const profileData = {
         id: authData.user.id,
         email: userData.email,
@@ -50,34 +58,42 @@ class AuthService {
         bio: userData.bio || null
       };
 
-      const { error: profileError } = await supabase
+      const { data: profileResult, error: profileError } = await supabase
         .from('user_profiles')
-        .insert(profileData);
+        .insert(profileData)
+        .select()
+        .single();
 
       if (profileError) {
-        // If profile creation fails, we should clean up the auth user
+        console.error('❌ Profile creation error:', profileError);
+        // Clean up auth user if profile creation fails
         await supabase.auth.admin.deleteUser(authData.user.id);
-        return { user: null, error: 'Failed to create user profile' };
+        return { user: null, error: 'Failed to create user profile: ' + profileError.message };
       }
 
+      console.log('✅ User profile created successfully');
+
       // Convert to our User type
-      const user = await this.convertSupabaseUserToUser(authData.user, profileData);
+      const user = await this.convertSupabaseUserToUser(authData.user, profileResult);
       return { user, error: null };
 
-    } catch (error) {
-      console.error('Sign up error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected sign up error:', error);
       return { user: null, error: 'An unexpected error occurred during sign up' };
     }
   }
 
   async signIn(email: string, password: string): Promise<AuthResponse> {
     try {
+      console.log('🔄 Starting sign in process...');
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
+        console.error('❌ Sign in error:', error);
         return { user: null, error: error.message };
       }
 
@@ -85,64 +101,91 @@ class AuthService {
         return { user: null, error: 'Failed to sign in' };
       }
 
+      console.log('✅ User signed in:', data.user.id);
+
       const user = await this.getUserProfile(data.user.id);
+      if (!user) {
+        return { user: null, error: 'User profile not found' };
+      }
+
       return { user, error: null };
 
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected sign in error:', error);
       return { user: null, error: 'An unexpected error occurred during sign in' };
     }
   }
 
   async signInWithGoogle(): Promise<AuthResponse> {
     try {
+      console.log('🔄 Starting Google sign in...');
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
       if (error) {
+        console.error('❌ Google sign in error:', error);
         return { user: null, error: error.message };
       }
 
+      console.log('✅ Google OAuth initiated');
       // For OAuth, we'll handle the user creation in the callback
       return { user: null, error: null };
 
-    } catch (error) {
-      console.error('Google sign in error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected Google sign in error:', error);
       return { user: null, error: 'An unexpected error occurred during Google sign in' };
     }
   }
 
   async signOut(): Promise<{ error: string | null }> {
     try {
+      console.log('🔄 Signing out...');
       const { error } = await supabase.auth.signOut();
-      return { error: error?.message || null };
-    } catch (error) {
-      console.error('Sign out error:', error);
+      if (error) {
+        console.error('❌ Sign out error:', error);
+        return { error: error.message };
+      }
+      console.log('✅ User signed out successfully');
+      return { error: null };
+    } catch (error: any) {
+      console.error('❌ Unexpected sign out error:', error);
       return { error: 'An unexpected error occurred during sign out' };
     }
   }
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
       
+      if (error) {
+        console.error('❌ Get current user error:', error);
+        return null;
+      }
+
       if (!user) {
         return null;
       }
 
       return await this.getUserProfile(user.id);
-    } catch (error) {
-      console.error('Get current user error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected get current user error:', error);
       return null;
     }
   }
 
   async getUserProfile(userId: string): Promise<User | null> {
     try {
+      console.log('🔄 Fetching user profile for:', userId);
+
       // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
@@ -150,8 +193,49 @@ class AuthService {
         .eq('id', userId)
         .single();
 
-      if (profileError || !profile) {
-        console.error('Profile fetch error:', profileError);
+      if (profileError) {
+        console.error('❌ Profile fetch error:', profileError);
+        
+        // If profile doesn't exist, try to create it from auth user
+        if (profileError.code === 'PGRST116') {
+          console.log('🔄 Profile not found, checking auth user...');
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            // Create profile from auth user data
+            const newProfile = {
+              id: user.id,
+              email: user.email || '',
+              name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+              date_of_birth: null,
+              gender: null,
+              school_or_job: null,
+              location: null,
+              bio: null
+            };
+
+            const { data: createdProfile, error: createError } = await supabase
+              .from('user_profiles')
+              .insert(newProfile)
+              .select()
+              .single();
+
+            if (createError) {
+              console.error('❌ Failed to create profile:', createError);
+              return null;
+            }
+
+            profile = createdProfile;
+            console.log('✅ Profile created from auth user');
+          } else {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      }
+
+      if (!profile) {
         return null;
       }
 
@@ -206,24 +290,27 @@ class AuthService {
         createdAt: profile.created_at
       };
 
+      console.log('✅ User profile loaded successfully');
       return user;
-    } catch (error) {
-      console.error('Get user profile error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected get user profile error:', error);
       return null;
     }
   }
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<User | null> {
     try {
+      console.log('🔄 Updating user profile...');
+
       // Update basic profile
       const profileUpdates: any = {};
-      if (updates.name) profileUpdates.name = updates.name;
-      if (updates.dateOfBirth) profileUpdates.date_of_birth = updates.dateOfBirth;
-      if (updates.gender) profileUpdates.gender = updates.gender;
-      if (updates.schoolOrJob) profileUpdates.school_or_job = updates.schoolOrJob;
-      if (updates.location) profileUpdates.location = updates.location;
-      if (updates.bio) profileUpdates.bio = updates.bio;
-      if (updates.profileImage) profileUpdates.profile_image = updates.profileImage;
+      if (updates.name !== undefined) profileUpdates.name = updates.name;
+      if (updates.dateOfBirth !== undefined) profileUpdates.date_of_birth = updates.dateOfBirth;
+      if (updates.gender !== undefined) profileUpdates.gender = updates.gender;
+      if (updates.schoolOrJob !== undefined) profileUpdates.school_or_job = updates.schoolOrJob;
+      if (updates.location !== undefined) profileUpdates.location = updates.location;
+      if (updates.bio !== undefined) profileUpdates.bio = updates.bio;
+      if (updates.profileImage !== undefined) profileUpdates.profile_image = updates.profileImage;
 
       if (Object.keys(profileUpdates).length > 0) {
         const { error: profileError } = await supabase
@@ -232,13 +319,13 @@ class AuthService {
           .eq('id', userId);
 
         if (profileError) {
-          console.error('Profile update error:', profileError);
+          console.error('❌ Profile update error:', profileError);
           return null;
         }
       }
 
       // Update skills to teach
-      if (updates.skillsToTeach) {
+      if (updates.skillsToTeach !== undefined) {
         // Delete existing skills
         await supabase
           .from('user_skills_teach')
@@ -254,14 +341,18 @@ class AuthService {
             description: skill.description
           }));
 
-          await supabase
+          const { error: skillsError } = await supabase
             .from('user_skills_teach')
             .insert(skillsData);
+
+          if (skillsError) {
+            console.error('❌ Skills to teach update error:', skillsError);
+          }
         }
       }
 
       // Update skills to learn
-      if (updates.skillsToLearn) {
+      if (updates.skillsToLearn !== undefined) {
         // Delete existing skills
         await supabase
           .from('user_skills_learn')
@@ -275,14 +366,18 @@ class AuthService {
             skill_name: skill
           }));
 
-          await supabase
+          const { error: skillsError } = await supabase
             .from('user_skills_learn')
             .insert(skillsData);
+
+          if (skillsError) {
+            console.error('❌ Skills to learn update error:', skillsError);
+          }
         }
       }
 
       // Update interests
-      if (updates.interests) {
+      if (updates.interests !== undefined) {
         // Delete existing interests
         await supabase
           .from('user_interests')
@@ -296,16 +391,21 @@ class AuthService {
             interest_name: interest
           }));
 
-          await supabase
+          const { error: interestsError } = await supabase
             .from('user_interests')
             .insert(interestsData);
+
+          if (interestsError) {
+            console.error('❌ Interests update error:', interestsError);
+          }
         }
       }
 
+      console.log('✅ Profile updated successfully');
       // Return updated user profile
       return await this.getUserProfile(userId);
-    } catch (error) {
-      console.error('Update profile error:', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected update profile error:', error);
       return null;
     }
   }
@@ -334,6 +434,8 @@ class AuthService {
   // Listen to auth state changes
   onAuthStateChange(callback: (user: User | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event);
+      
       if (session?.user) {
         const user = await this.getUserProfile(session.user.id);
         callback(user);
