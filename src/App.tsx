@@ -24,7 +24,7 @@ function App() {
     checkConnection();
   }, []);
 
-  // Show loading spinner while checking auth and connection
+  // Show loading spinner only while checking auth and connection for the first time
   if (loading || !connectionChecked) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -53,7 +53,7 @@ function App() {
     );
   }
 
-  // Show dashboard if authenticated and profile is complete
+  // Show dashboard immediately if authenticated and profile is complete
   if (isAuthenticated && user) {
     // Check if profile needs completion
     if (!user.profileComplete) {
@@ -66,6 +66,7 @@ function App() {
         />
       );
     }
+    // User is authenticated and profile is complete - show dashboard immediately
     return <Dashboard />;
   }
 

@@ -108,10 +108,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         console.log('🔄 Attempting login...');
         const user = await login(formData.email, formData.password);
         if (user) {
-          setSuccess('Login successful! Redirecting...');
-          setTimeout(() => {
-            onAuthSuccess();
-          }, 1500);
+          console.log('✅ Login successful, user will be redirected automatically');
+          // Don't show success message or delay - let the auth state change handle the redirect
+          onAuthSuccess();
         }
       } else {
         console.log('🔄 Attempting sign up...');

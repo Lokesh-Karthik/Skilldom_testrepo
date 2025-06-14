@@ -27,13 +27,16 @@ export const useAuth = () => {
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
       console.log('🔄 Auth state changed, user:', user ? 'authenticated' : 'not authenticated');
       setUser(user);
-      setLoading(false);
+      // Don't set loading to false here for existing sessions - only for new auth changes
+      if (loading) {
+        setLoading(false);
+      }
     });
 
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [loading]);
 
   const signUp = async (userData: SignUpData) => {
     setAuthLoading(true);
