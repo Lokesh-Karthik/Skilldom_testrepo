@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Star, Users, Filter, X, Sparkles } from 'lucide-react';
 import { User, SearchFilters } from '../types';
 import { mockUserService } from '../services/mockBackend';
-import { UserCard } from '../../UserCard';
+import { UserCard } from './UserCard';
 
 export const UserSearch: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);

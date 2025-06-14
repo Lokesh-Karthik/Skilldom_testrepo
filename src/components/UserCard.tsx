@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MapPin, Star, MessageCircle, Calendar, GraduationCap, Sparkles } from 'lucide-react';
 import { User } from '../types';
 import { mockConnectionService } from '../services/mockBackend';
-import { ConnectionRequestModal } from '../../ConnectionRequestModal';
+import { ConnectionRequestModal } from './ConnectionRequestModal';
 
 interface UserCardProps {
   user: User;
