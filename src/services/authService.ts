@@ -66,8 +66,8 @@ class AuthService {
 
       if (profileError) {
         console.error('❌ Profile creation error:', profileError);
-        // Clean up auth user if profile creation fails
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        // Note: We cannot use admin functions from client-side code
+        // The auth user will be cleaned up automatically by Supabase if not confirmed
         return { user: null, error: 'Failed to create user profile: ' + profileError.message };
       }
 
@@ -201,7 +201,7 @@ class AuthService {
           console.log('🔄 Profile not found, checking auth user...');
           const { data: { user } } = await supabase.auth.getUser();
           
-          if (user) {
+          if (user && user.id === userId) {
             // Create profile from auth user data
             const newProfile = {
               id: user.id,
@@ -225,8 +225,8 @@ class AuthService {
               return null;
             }
 
-            profile = createdProfile;
             console.log('✅ Profile created from auth user');
+            return await this.buildUserFromProfile(createdProfile, userId);
           } else {
             return null;
           }
@@ -239,63 +239,67 @@ class AuthService {
         return null;
       }
 
-      // Get skills to teach
-      const { data: skillsToTeach } = await supabase
-        .from('user_skills_teach')
-        .select('*')
-        .eq('user_id', userId);
-
-      // Get skills to learn
-      const { data: skillsToLearn } = await supabase
-        .from('user_skills_learn')
-        .select('*')
-        .eq('user_id', userId);
-
-      // Get interests
-      const { data: interests } = await supabase
-        .from('user_interests')
-        .select('*')
-        .eq('user_id', userId);
-
-      // Get connections
-      const { data: connections } = await supabase
-        .from('user_connections')
-        .select('*')
-        .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`)
-        .eq('status', 'accepted');
-
-      // Convert to our User type
-      const user: User = {
-        id: profile.id,
-        email: profile.email,
-        name: profile.name,
-        dateOfBirth: profile.date_of_birth || '',
-        gender: profile.gender || 'other',
-        schoolOrJob: profile.school_or_job || '',
-        location: profile.location || '',
-        bio: profile.bio || '',
-        profileImage: profile.profile_image,
-        skillsToTeach: skillsToTeach?.map(skill => ({
-          name: skill.skill_name,
-          rating: skill.rating,
-          description: skill.description
-        })) || [],
-        skillsToLearn: skillsToLearn?.map(skill => skill.skill_name) || [],
-        interests: interests?.map(interest => interest.interest_name) || [],
-        connections: connections?.map(conn => 
-          conn.user_id === userId ? conn.connected_user_id : conn.user_id
-        ) || [],
-        pendingRequests: [], // We'll implement this separately
-        sentRequests: [], // We'll implement this separately
-        createdAt: profile.created_at
-      };
-
-      console.log('✅ User profile loaded successfully');
-      return user;
+      return await this.buildUserFromProfile(profile, userId);
     } catch (error: any) {
       console.error('❌ Unexpected get user profile error:', error);
       return null;
     }
+  }
+
+  private async buildUserFromProfile(profile: any, userId: string): Promise<User> {
+    // Get skills to teach
+    const { data: skillsToTeach } = await supabase
+      .from('user_skills_teach')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Get skills to learn
+    const { data: skillsToLearn } = await supabase
+      .from('user_skills_learn')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Get interests
+    const { data: interests } = await supabase
+      .from('user_interests')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Get connections
+    const { data: connections } = await supabase
+      .from('user_connections')
+      .select('*')
+      .or(`user_id.eq.${userId},connected_user_id.eq.${userId}`)
+      .eq('status', 'accepted');
+
+    // Convert to our User type
+    const user: User = {
+      id: profile.id,
+      email: profile.email,
+      name: profile.name,
+      dateOfBirth: profile.date_of_birth || '',
+      gender: profile.gender || 'other',
+      schoolOrJob: profile.school_or_job || '',
+      location: profile.location || '',
+      bio: profile.bio || '',
+      profileImage: profile.profile_image,
+      skillsToTeach: skillsToTeach?.map(skill => ({
+        name: skill.skill_name,
+        rating: skill.rating,
+        description: skill.description
+      })) || [],
+      skillsToLearn: skillsToLearn?.map(skill => skill.skill_name) || [],
+      interests: interests?.map(interest => interest.interest_name) || [],
+      connections: connections?.map(conn => 
+        conn.user_id === userId ? conn.connected_user_id : conn.user_id
+      ) || [],
+      pendingRequests: [], // We'll implement this separately
+      sentRequests: [], // We'll implement this separately
+      createdAt: profile.created_at
+    };
+
+    console.log('✅ User profile loaded successfully');
+    return user;
   }
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<User | null> {
