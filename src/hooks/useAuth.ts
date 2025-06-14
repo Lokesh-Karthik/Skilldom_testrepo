@@ -8,16 +8,24 @@ export const useAuth = () => {
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Get initial user on mount
     const getInitialUser = async () => {
       try {
         const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        if (isMounted) {
+          setUser(currentUser);
+        }
       } catch (error) {
         console.error('Error getting initial user:', error);
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -26,17 +34,16 @@ export const useAuth = () => {
     // Listen to auth state changes
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
       console.log('🔄 Auth state changed, user:', user ? 'authenticated' : 'not authenticated');
-      setUser(user);
-      // Don't set loading to false here for existing sessions - only for new auth changes
-      if (loading) {
-        setLoading(false);
+      if (isMounted) {
+        setUser(user);
       }
     });
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
-  }, [loading]);
+  }, []); // Empty dependency array - effect runs only once
 
   const signUp = async (userData: SignUpData) => {
     setAuthLoading(true);
