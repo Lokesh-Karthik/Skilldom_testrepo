@@ -6,7 +6,7 @@ import { testSupabaseConnection } from './lib/supabase';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [connectionChecked, setConnectionChecked] = useState(false);
 
@@ -45,7 +45,7 @@ function App() {
       <ProfileSetup 
         onComplete={() => {
           setShowProfileSetup(false);
-          // The user will be redirected to dashboard automatically
+          // User will be redirected to dashboard automatically
         }} 
       />
     );
@@ -53,13 +53,13 @@ function App() {
 
   // Show dashboard if authenticated and profile is complete
   if (isAuthenticated && user) {
-    // Check if profile needs completion
+    // Check if profile needs completion (basic required fields)
     if (!user.name || !user.location) {
       return (
         <ProfileSetup 
           onComplete={() => {
             setShowProfileSetup(false);
-            // The user will be redirected to dashboard automatically
+            // User will be redirected to dashboard automatically
           }} 
         />
       );

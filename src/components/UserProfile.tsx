@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { Edit3, MapPin, Calendar, GraduationCap, Star, Plus, X, Save, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Skill } from '../types';
-import { mockUserService } from '../services/mockBackend';
 
 export const UserProfile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -84,9 +83,11 @@ export const UserProfile: React.FC = () => {
         interests
       };
       
-      const updatedUser = await mockUserService.updateProfile(user.id, updates);
+      const updatedUser = await updateProfile(updates);
       if (updatedUser) {
         setIsEditing(false);
+        // Redirect to dashboard after successful update
+        window.location.reload();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
