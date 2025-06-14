@@ -88,10 +88,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         console.log('🔄 Attempting login...');
         const user = await login(formData.email, formData.password);
         if (user) {
-          setSuccess('Login successful! Redirecting to dashboard...');
-          setTimeout(() => {
-            onAuthSuccess();
-          }, 1000);
+          setSuccess('Login successful!');
+          // onAuthSuccess will be called automatically via auth state change
         }
       } else {
         console.log('🔄 Attempting sign up...');

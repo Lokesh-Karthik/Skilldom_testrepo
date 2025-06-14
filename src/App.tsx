@@ -5,8 +5,23 @@ import { Dashboard } from './components/Dashboard';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+
+  // Show loading spinner while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative mb-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 blur-xl"></div>
+          </div>
+          <p className="text-gray-400 text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show profile setup if user needs to complete profile
   if (showProfileSetup) {
@@ -14,8 +29,7 @@ function App() {
       <ProfileSetup 
         onComplete={() => {
           setShowProfileSetup(false);
-          // Force reload to ensure proper state update
-          window.location.href = '/';
+          // The user state will be updated automatically
         }} 
       />
     );
@@ -29,8 +43,7 @@ function App() {
         <ProfileSetup 
           onComplete={() => {
             setShowProfileSetup(false);
-            // Force reload to ensure proper state update
-            window.location.href = '/';
+            // The user state will be updated automatically
           }} 
         />
       );
@@ -42,8 +55,8 @@ function App() {
   return (
     <AuthPage 
       onAuthSuccess={() => {
-        // Force reload to check user state
-        window.location.href = '/';
+        // User state will be updated automatically via auth state listener
+        // No need to force reload
       }}
       onNeedProfile={() => setShowProfileSetup(true)}
     />

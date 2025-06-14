@@ -4,11 +4,26 @@ import { authService, SignUpData } from '../services/authService';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    // Only listen to auth state changes, don't check for current user on mount
+    // Get initial user on mount
+    const getInitialUser = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error getting initial user:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialUser();
+
+    // Listen to auth state changes
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
       setUser(user);
       setLoading(false);
@@ -92,8 +107,8 @@ export const useAuth = () => {
       if (error) {
         throw new Error(error);
       }
-      // Force reload to clear all state
-      window.location.href = '/';
+      // Clear user state immediately
+      setUser(null);
     } finally {
       setAuthLoading(false);
     }

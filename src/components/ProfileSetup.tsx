@@ -91,7 +91,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
       
       if (updatedUser) {
         setSuccess('Profile completed successfully! Redirecting to dashboard...');
-        // Use a more reliable redirect method
+        // Wait a moment for the success message to show, then complete
         setTimeout(() => {
           onComplete();
         }, 1000);
