@@ -23,42 +23,58 @@ function App() {
     );
   }
 
-  // Show profile setup if user needs to complete profile
-  if (showProfileSetup) {
-    return (
-      <ProfileSetup 
-        onComplete={() => {
-          setShowProfileSetup(false);
-          // The user state will be updated automatically
-        }} 
-      />
-    );
-  }
-
-  // Show dashboard if authenticated and profile is complete
+  // IMPORTANT: If user is authenticated, always prioritize showing the dashboard
+  // Only show profile setup if absolutely necessary (missing critical fields)
   if (isAuthenticated && user) {
-    // Check if profile needs completion (basic required fields)
-    if (!user.name || !user.location || !user.schoolOrJob) {
+    console.log('✅ User is authenticated, checking profile completeness...');
+    
+    // Check if profile needs completion (only check absolutely essential fields)
+    const needsProfileSetup = !user.name || !user.location || !user.schoolOrJob;
+    
+    if (needsProfileSetup && !showProfileSetup) {
+      console.log('⚠️ Profile incomplete, showing setup...');
       return (
         <ProfileSetup 
           onComplete={() => {
+            console.log('✅ Profile setup completed');
             setShowProfileSetup(false);
             // The user state will be updated automatically
           }} 
         />
       );
     }
+
+    // If we're in profile setup mode but user is authenticated
+    if (showProfileSetup) {
+      return (
+        <ProfileSetup 
+          onComplete={() => {
+            console.log('✅ Profile setup completed');
+            setShowProfileSetup(false);
+            // The user state will be updated automatically
+          }} 
+        />
+      );
+    }
+
+    // User is authenticated and profile is complete - show dashboard
+    console.log('✅ Showing dashboard for authenticated user');
     return <Dashboard />;
   }
 
-  // Default to auth page for unauthenticated users
+  // User is not authenticated - show auth page
+  console.log('❌ User not authenticated, showing auth page');
   return (
     <AuthPage 
       onAuthSuccess={() => {
+        console.log('✅ Auth success callback triggered');
         // User state will be updated automatically via auth state listener
-        // No need to force reload
+        // No need to force reload or manual state changes
       }}
-      onNeedProfile={() => setShowProfileSetup(true)}
+      onNeedProfile={() => {
+        console.log('⚠️ Profile setup needed');
+        setShowProfileSetup(true);
+      }}
     />
   );
 }

@@ -25,6 +25,7 @@ export const useAuth = () => {
 
     // Listen to auth state changes
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
+      console.log('🔄 Auth state changed, user:', user ? 'authenticated' : 'not authenticated');
       setUser(user);
       setLoading(false);
     });
@@ -103,12 +104,28 @@ export const useAuth = () => {
   const logout = async () => {
     setAuthLoading(true);
     try {
-      const { error } = await authService.signOut();
-      if (error) {
-        throw new Error(error);
-      }
+      console.log('🔄 Signing out user...');
+      
       // Clear user state immediately
       setUser(null);
+      
+      // Sign out from Supabase
+      const { error } = await authService.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+        // Even if there's an error, we've cleared the local state
+      } else {
+        console.log('✅ User signed out successfully');
+      }
+      
+      // Force a page reload to ensure clean state
+      window.location.href = '/';
+      
+    } catch (error: any) {
+      console.error('❌ Unexpected sign out error:', error);
+      // Even if there's an error, clear local state and redirect
+      setUser(null);
+      window.location.href = '/';
     } finally {
       setAuthLoading(false);
     }

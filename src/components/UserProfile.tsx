@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Edit3, MapPin, Calendar, GraduationCap, Star, Plus, X, Save, Sparkles } from 'lucide-react';
+import { Edit3, MapPin, Calendar, GraduationCap, Star, Plus, X, Save, Sparkles, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Skill } from '../types';
 
 export const UserProfile: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout, authLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -86,8 +86,6 @@ export const UserProfile: React.FC = () => {
       const updatedUser = await updateProfile(updates);
       if (updatedUser) {
         setIsEditing(false);
-        // Redirect to dashboard after successful update
-        window.location.reload();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -109,6 +107,17 @@ export const UserProfile: React.FC = () => {
     setInterests(user.interests);
   };
 
+  const handleSignOut = async () => {
+    try {
+      console.log('🔄 User clicked sign out from profile');
+      await logout();
+    } catch (error) {
+      console.error('❌ Sign out error:', error);
+      // Force redirect even if there's an error
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4 lg:p-6">
       {/* Header */}
@@ -123,15 +132,25 @@ export const UserProfile: React.FC = () => {
               <p className="text-gray-400 text-lg">Manage your personal information and skills</p>
             </div>
           </div>
-          {!isEditing && (
+          <div className="flex items-center space-x-3">
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:from-purple-700 hover:to-cyan-700 transition-all duration-200 shadow-lg shadow-purple-500/25"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>Edit Profile</span>
+              </button>
+            )}
             <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl hover:from-purple-700 hover:to-cyan-700 transition-all duration-200 shadow-lg shadow-purple-500/25"
+              onClick={handleSignOut}
+              disabled={authLoading}
+              className="flex items-center space-x-2 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all duration-200 font-medium border border-red-500/20 hover:border-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Edit3 className="h-4 w-4" />
-              <span>Edit Profile</span>
+              <LogOut className="h-4 w-4" />
+              <span>{authLoading ? 'Signing Out...' : 'Sign Out'}</span>
             </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -202,10 +221,12 @@ export const UserProfile: React.FC = () => {
                     <MapPin className="h-5 w-5 mr-3 text-cyan-400" />
                     <span>{user.location}</span>
                   </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-3 text-blue-400" />
-                    <span>{calculateAge(user.dateOfBirth)} years old</span>
-                  </div>
+                  {user.dateOfBirth && (
+                    <div className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-3 text-blue-400" />
+                      <span>{calculateAge(user.dateOfBirth)} years old</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-gray-300 mt-6 leading-relaxed">{user.bio}</p>
               </div>

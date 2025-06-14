@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MessageCircle, Users, User, Menu, X, Sparkles } from 'lucide-react';
+import { Search, MessageCircle, Users, User, Menu, X, Sparkles, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserSearch } from './UserSearch';
 import { ConnectionRequests } from './ConnectionRequests';
@@ -11,7 +11,7 @@ type TabType = 'discover' | 'connections' | 'messages' | 'profile';
 export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('discover');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, authLoading } = useAuth();
 
   if (!user) return null;
 
@@ -34,6 +34,17 @@ export const Dashboard: React.FC = () => {
         return <UserProfile />;
       default:
         return <UserSearch />;
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      console.log('🔄 User clicked sign out');
+      await logout();
+    } catch (error) {
+      console.error('❌ Sign out error:', error);
+      // Force redirect even if there's an error
+      window.location.href = '/';
     }
   };
 
@@ -120,10 +131,12 @@ export const Dashboard: React.FC = () => {
             {/* Logout */}
             <div className="p-4 border-t border-gray-700/50">
               <button
-                onClick={logout}
-                className="w-full px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all duration-200 font-medium border border-red-500/20 hover:border-red-500/40"
+                onClick={handleSignOut}
+                disabled={authLoading}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all duration-200 font-medium border border-red-500/20 hover:border-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign Out
+                <LogOut className="h-4 w-4" />
+                <span>{authLoading ? 'Signing Out...' : 'Sign Out'}</span>
               </button>
             </div>
           </div>
