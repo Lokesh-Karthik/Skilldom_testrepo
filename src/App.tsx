@@ -24,8 +24,8 @@ function App() {
     checkConnection();
   }, []);
 
-  // Show loading spinner while checking auth and connection
-  if (loading || !connectionChecked) {
+  // Show loading spinner only while checking connection (not auth)
+  if (!connectionChecked) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -33,9 +33,7 @@ function App() {
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500/30 border-t-purple-500 mx-auto"></div>
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 blur-xl"></div>
           </div>
-          <p className="text-gray-400 text-lg">
-            {!connectionChecked ? 'Connecting to database...' : 'Loading...'}
-          </p>
+          <p className="text-gray-400 text-lg">Connecting to database...</p>
         </div>
       </div>
     );

@@ -4,27 +4,11 @@ import { authService, SignUpData } from '../services/authService';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed from true to false
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    // Get initial user
-    const getInitialUser = async () => {
-      try {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error getting initial user:', error);
-        // If user not found, don't throw error - just set to null
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialUser();
-
-    // Listen to auth state changes
+    // Only listen to auth state changes, don't check for current user on mount
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
       setUser(user);
       setLoading(false);
