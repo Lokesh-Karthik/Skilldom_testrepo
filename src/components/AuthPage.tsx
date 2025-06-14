@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle, RotateCcw, Inbox } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle, RotateCcw, Inbox, Info } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { testSupabaseConnection } from '../lib/supabase';
 
@@ -76,6 +76,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
     return true;
   };
 
+  const getErrorMessage = (errorCode: string): string => {
+    switch (errorCode) {
+      case 'ACCOUNT_NOT_FOUND':
+        return 'No account found with this email address. Would you like to create a new account?';
+      case 'INCORRECT_PASSWORD':
+        return 'Incorrect password. Please try again or reset your password.';
+      case 'EMAIL_NOT_CONFIRMED':
+        return 'Please check your email and click the confirmation link before signing in.';
+      case 'TOO_MANY_ATTEMPTS':
+        return 'Too many login attempts. Please wait a few minutes before trying again.';
+      default:
+        return errorCode;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -115,20 +130,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
     } catch (err: any) {
       console.error('❌ Auth error:', err);
       
+      const errorMessage = getErrorMessage(err.message);
+      setError(errorMessage);
+      
       // Handle specific error cases
-      if (err.message === 'USER_NOT_FOUND' && isLogin) {
-        setError('Account not found. Would you like to create a new account?');
-        // Auto-switch to sign up mode
+      if (err.message === 'ACCOUNT_NOT_FOUND' && isLogin) {
+        setShowForgotPassword(false); // Hide forgot password for this case
+        // Auto-switch to sign up mode after showing the error
         setTimeout(() => {
           setIsLogin(false);
           setError('');
           setSuccess('Switched to sign up mode. Please create your account.');
-        }, 2000);
-      } else if (err.message.includes('Invalid login credentials') && isLogin) {
-        setError('Incorrect password. Please try again or reset your password.');
+        }, 3000);
+      } else if (err.message === 'INCORRECT_PASSWORD' && isLogin) {
         setShowForgotPassword(true);
-      } else {
-        setError(err.message || 'An error occurred during authentication');
+      } else if (err.message === 'EMAIL_NOT_CONFIRMED') {
+        // Show resend confirmation option
+        setUserEmail(formData.email);
+        setTimeout(() => {
+          setShowEmailConfirmation(true);
+        }, 2000);
       }
     }
   };
@@ -372,6 +393,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         </div>
 
         <div className="glass-effect rounded-2xl p-8 shadow-2xl">
+          {/* Demo Account Info */}
+          {isLogin && (
+            <div className="mb-6 glass-effect border border-blue-500/20 rounded-xl p-4">
+              <div className="flex items-start space-x-3">
+                <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-300 mb-1">Demo Account</h4>
+                  <p className="text-xs text-gray-400 mb-2">
+                    To test the application, you'll need to create an account first. Click "Don't have an account? Sign up" below.
+                  </p>
+                  <div className="text-xs text-gray-500">
+                    <p>• Sign up with any email address</p>
+                    <p>• Check your email for confirmation</p>
+                    <p>• Return here to sign in</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               {!isLogin && (

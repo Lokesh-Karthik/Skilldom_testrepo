@@ -37,6 +37,18 @@ class AuthService {
 
       if (authError) {
         console.error('❌ Auth sign up error:', authError);
+        
+        // Handle specific sign up errors
+        if (authError.message.includes('already registered')) {
+          return { user: null, error: 'An account with this email already exists. Please try signing in instead.' };
+        }
+        if (authError.message.includes('Password should be at least')) {
+          return { user: null, error: 'Password must be at least 6 characters long.' };
+        }
+        if (authError.message.includes('Invalid email')) {
+          return { user: null, error: 'Please enter a valid email address.' };
+        }
+        
         return { user: null, error: authError.message };
       }
 
@@ -95,6 +107,31 @@ class AuthService {
 
       if (error) {
         console.error('❌ Sign in error:', error);
+        
+        // Handle specific authentication errors with user-friendly messages
+        if (error.message.includes('Invalid login credentials')) {
+          // Check if user exists by trying to find their profile
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('email')
+            .eq('email', email)
+            .single();
+          
+          if (!profile) {
+            return { user: null, error: 'ACCOUNT_NOT_FOUND' };
+          } else {
+            return { user: null, error: 'INCORRECT_PASSWORD' };
+          }
+        }
+        
+        if (error.message.includes('Email not confirmed')) {
+          return { user: null, error: 'EMAIL_NOT_CONFIRMED' };
+        }
+        
+        if (error.message.includes('Too many requests')) {
+          return { user: null, error: 'TOO_MANY_ATTEMPTS' };
+        }
+        
         return { user: null, error: error.message };
       }
 
@@ -106,7 +143,7 @@ class AuthService {
 
       const user = await this.getUserProfile(data.user.id);
       if (!user) {
-        return { user: null, error: 'User profile not found' };
+        return { user: null, error: 'User profile not found. Please contact support.' };
       }
 
       return { user, error: null };

@@ -37,9 +37,18 @@ export const useAuth = () => {
     try {
       const { user, error } = await authService.signIn(email, password);
       if (error) {
-        // If user not found in database, suggest sign up
-        if (error.includes('User profile not found') || error.includes('Invalid login credentials')) {
-          throw new Error('USER_NOT_FOUND');
+        // Handle specific error types with custom error codes
+        if (error === 'ACCOUNT_NOT_FOUND') {
+          throw new Error('ACCOUNT_NOT_FOUND');
+        }
+        if (error === 'INCORRECT_PASSWORD') {
+          throw new Error('INCORRECT_PASSWORD');
+        }
+        if (error === 'EMAIL_NOT_CONFIRMED') {
+          throw new Error('EMAIL_NOT_CONFIRMED');
+        }
+        if (error === 'TOO_MANY_ATTEMPTS') {
+          throw new Error('TOO_MANY_ATTEMPTS');
         }
         throw new Error(error);
       }
