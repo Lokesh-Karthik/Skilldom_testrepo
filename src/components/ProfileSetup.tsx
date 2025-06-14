@@ -91,10 +91,10 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
       
       if (updatedUser) {
         setSuccess('Profile completed successfully! Redirecting to dashboard...');
-        // Force a page reload to ensure the user state is properly updated
+        // Use a more reliable redirect method
         setTimeout(() => {
-          window.location.reload();
-        }, 500);
+          onComplete();
+        }, 1000);
       } else {
         setError('Failed to update profile. Please try again.');
       }

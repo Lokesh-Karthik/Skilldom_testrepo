@@ -24,7 +24,7 @@ function App() {
     checkConnection();
   }, []);
 
-  // Show loading spinner only while checking connection (not auth)
+  // Show loading spinner only while checking connection
   if (!connectionChecked) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -45,7 +45,8 @@ function App() {
       <ProfileSetup 
         onComplete={() => {
           setShowProfileSetup(false);
-          // User will be redirected to dashboard automatically
+          // Force reload to ensure proper state update
+          window.location.href = '/';
         }} 
       />
     );
@@ -54,12 +55,13 @@ function App() {
   // Show dashboard if authenticated and profile is complete
   if (isAuthenticated && user) {
     // Check if profile needs completion (basic required fields)
-    if (!user.name || !user.location) {
+    if (!user.name || !user.location || !user.schoolOrJob) {
       return (
         <ProfileSetup 
           onComplete={() => {
             setShowProfileSetup(false);
-            // User will be redirected to dashboard automatically
+            // Force reload to ensure proper state update
+            window.location.href = '/';
           }} 
         />
       );
@@ -71,8 +73,8 @@ function App() {
   return (
     <AuthPage 
       onAuthSuccess={() => {
-        // User is authenticated, check if profile needs completion
-        // This will be handled by the auth state change and the checks above
+        // Force reload to check user state
+        window.location.href = '/';
       }}
       onNeedProfile={() => setShowProfileSetup(true)}
     />

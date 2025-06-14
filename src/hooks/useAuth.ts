@@ -4,7 +4,7 @@ import { authService, SignUpData } from '../services/authService';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false); // Changed from true to false
+  const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
@@ -92,6 +92,8 @@ export const useAuth = () => {
       if (error) {
         throw new Error(error);
       }
+      // Force reload to clear all state
+      window.location.href = '/';
     } finally {
       setAuthLoading(false);
     }
