@@ -238,25 +238,34 @@ class AuthService {
       const profile = await this.getUserProfile(authUser.id);
       
       if (profile) {
-        // Full profile exists, return it with profileComplete: true
+        // Full profile exists, check if it's complete
+        const isComplete = !!(
+          profile.name && 
+          profile.location && 
+          profile.schoolOrJob &&
+          profile.name.trim() !== '' &&
+          profile.location.trim() !== '' &&
+          profile.schoolOrJob.trim() !== ''
+        );
+        
         return {
           ...profile,
-          profileComplete: true
+          profileComplete: isComplete
         };
       }
 
       // No full profile exists, return basic user with profileComplete: false
-      console.log('⚠️ No full profile found, returning basic user');
+      console.log('⚠️ No full profile found, returning basic user for profile setup');
       return {
         id: authUser.id,
         email: authUser.email || '',
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
         dateOfBirth: '',
         gender: 'other',
         schoolOrJob: '',
         location: '',
         bio: '',
-        profileImage: null,
+        profileImage: authUser.user_metadata?.avatar_url || null,
         skillsToTeach: [],
         skillsToLearn: [],
         interests: [],
@@ -272,13 +281,13 @@ class AuthService {
       return {
         id: authUser.id,
         email: authUser.email || '',
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
         dateOfBirth: '',
         gender: 'other',
         schoolOrJob: '',
         location: '',
         bio: '',
-        profileImage: null,
+        profileImage: authUser.user_metadata?.avatar_url || null,
         skillsToTeach: [],
         skillsToLearn: [],
         interests: [],
@@ -399,12 +408,13 @@ class AuthService {
         const newProfile = {
           id: userId,
           email: user.email || '',
-          name: updates.name || user.user_metadata?.name || 'User',
+          name: updates.name || user.user_metadata?.name || user.user_metadata?.full_name || 'User',
           date_of_birth: updates.dateOfBirth || null,
           gender: updates.gender || null,
           school_or_job: updates.schoolOrJob || null,
           location: updates.location || null,
-          bio: updates.bio || null
+          bio: updates.bio || null,
+          profile_image: updates.profileImage || user.user_metadata?.avatar_url || null
         };
 
         const { data: createdProfile, error: createError } = await supabase
