@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Calendar, MapPin, GraduationCap, Star, Plus, X, Sparkles, AlertCircle } from 'lucide-react';
+import { User, Calendar, MapPin, GraduationCap, Star, Plus, X, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Skill } from '../types';
 
@@ -10,6 +10,7 @@ interface ProfileSetupProps {
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     dateOfBirth: '',
@@ -32,6 +33,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError('');
+    if (success) setSuccess('');
   };
 
   const addSkillToTeach = () => {
@@ -75,6 +77,8 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
 
     try {
       setError('');
+      setSuccess('Creating your profile...');
+      
       const updates = {
         ...formData,
         skillsToTeach,
@@ -84,7 +88,10 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
 
       const updatedUser = await updateProfile(updates);
       if (updatedUser) {
-        onComplete();
+        setSuccess('Profile completed successfully! Redirecting to dashboard...');
+        setTimeout(() => {
+          onComplete();
+        }, 1500);
       } else {
         setError('Failed to update profile. Please try again.');
       }
@@ -148,6 +155,13 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
             <div className="mb-6 flex items-center space-x-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 flex items-center space-x-2 text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{success}</span>
             </div>
           )}
 

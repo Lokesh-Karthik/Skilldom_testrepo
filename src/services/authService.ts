@@ -66,12 +66,13 @@ class AuthService {
 
       if (profileError) {
         console.error('❌ Profile creation error:', profileError);
-        // Note: We cannot use admin functions from client-side code
-        // The auth user will be cleaned up automatically by Supabase if not confirmed
         return { user: null, error: 'Failed to create user profile: ' + profileError.message };
       }
 
       console.log('✅ User profile created successfully');
+
+      // Send welcome email
+      await this.sendWelcomeEmail(userData.email, userData.name);
 
       // Convert to our User type
       const user = await this.convertSupabaseUserToUser(authData.user, profileResult);
@@ -137,12 +138,33 @@ class AuthService {
       }
 
       console.log('✅ Google OAuth initiated');
-      // For OAuth, we'll handle the user creation in the callback
       return { user: null, error: null };
 
     } catch (error: any) {
       console.error('❌ Unexpected Google sign in error:', error);
       return { user: null, error: 'An unexpected error occurred during Google sign in' };
+    }
+  }
+
+  async resetPassword(email: string): Promise<{ error: string | null }> {
+    try {
+      console.log('🔄 Sending password reset email...');
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`
+      });
+
+      if (error) {
+        console.error('❌ Password reset error:', error);
+        return { error: error.message };
+      }
+
+      console.log('✅ Password reset email sent');
+      return { error: null };
+
+    } catch (error: any) {
+      console.error('❌ Unexpected password reset error:', error);
+      return { error: 'An unexpected error occurred while sending password reset email' };
     }
   }
 
@@ -411,6 +433,25 @@ class AuthService {
     } catch (error: any) {
       console.error('❌ Unexpected update profile error:', error);
       return null;
+    }
+  }
+
+  private async sendWelcomeEmail(email: string, name: string): Promise<void> {
+    try {
+      console.log('🔄 Sending welcome email to:', email);
+      
+      // Note: In a real application, you would use a service like SendGrid, Mailgun, or Supabase Edge Functions
+      // For now, we'll just log that we would send an email
+      console.log(`📧 Welcome email would be sent to ${name} at ${email}`);
+      
+      // You could implement this using Supabase Edge Functions:
+      // const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+      //   body: { email, name }
+      // });
+      
+    } catch (error: any) {
+      console.error('❌ Failed to send welcome email:', error);
+      // Don't throw error as this is not critical for user registration
     }
   }
 

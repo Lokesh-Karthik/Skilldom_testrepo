@@ -79,6 +79,19 @@ export const useAuth = () => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    setAuthLoading(true);
+    try {
+      const { error } = await authService.resetPassword(email);
+      if (error) {
+        throw new Error(error);
+      }
+      return true;
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const logout = async () => {
     setAuthLoading(true);
     try {
@@ -116,6 +129,7 @@ export const useAuth = () => {
     signUp,
     login,
     loginWithGoogle,
+    resetPassword,
     logout,
     updateProfile,
     register, // Legacy

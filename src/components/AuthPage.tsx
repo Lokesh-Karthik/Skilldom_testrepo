@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { testSupabaseConnection } from '../lib/supabase';
 
@@ -11,6 +11,7 @@ interface AuthPageProps {
 export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,7 +22,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
   const [success, setSuccess] = useState('');
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
-  const { login, signUp, loginWithGoogle, authLoading } = useAuth();
+  const { login, signUp, loginWithGoogle, resetPassword, authLoading } = useAuth();
 
   // Test Supabase connection on component mount
   useEffect(() => {
@@ -90,7 +91,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
         console.log('🔄 Attempting login...');
         const user = await login(formData.email, formData.password);
         if (user) {
-          setSuccess('Login successful! Redirecting...');
+          setSuccess('Login successful! Redirecting to dashboard...');
           setTimeout(() => {
             onAuthSuccess();
           }, 1000);
@@ -121,9 +122,29 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
           setError('');
           setSuccess('Switched to sign up mode. Please create your account.');
         }, 2000);
+      } else if (err.message.includes('Invalid login credentials') && isLogin) {
+        setError('Incorrect password. Please try again or reset your password.');
+        setShowForgotPassword(true);
       } else {
         setError(err.message || 'An error occurred during authentication');
       }
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address first');
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccess('');
+      await resetPassword(formData.email);
+      setSuccess('Password reset email sent! Check your inbox.');
+      setShowForgotPassword(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send password reset email');
     }
   };
 
@@ -306,6 +327,36 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
               </div>
             )}
 
+            {/* Forgot Password Section */}
+            {showForgotPassword && isLogin && (
+              <div className="glass-effect border border-blue-500/20 rounded-xl p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <RotateCcw className="h-4 w-4 text-blue-400" />
+                  <h4 className="text-sm font-medium text-blue-300">Reset Password</h4>
+                </div>
+                <p className="text-sm text-gray-400 mb-3">
+                  We'll send you a password reset link at {formData.email}
+                </p>
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={authLoading}
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
+                  >
+                    {authLoading ? 'Sending...' : 'Send Reset Email'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="px-3 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"
@@ -358,6 +409,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile
                   setIsLogin(!isLogin);
                   setError('');
                   setSuccess('');
+                  setShowForgotPassword(false);
                   setFormData({ email: '', password: '', name: '', confirmPassword: '' });
                 }}
                 className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors duration-200"

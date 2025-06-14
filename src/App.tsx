@@ -45,7 +45,10 @@ function App() {
   if (showProfileSetup) {
     return (
       <ProfileSetup 
-        onComplete={() => setShowProfileSetup(false)} 
+        onComplete={() => {
+          setShowProfileSetup(false);
+          // The user will be redirected to dashboard automatically
+        }} 
       />
     );
   }
@@ -56,7 +59,10 @@ function App() {
     if (!user.name || !user.location) {
       return (
         <ProfileSetup 
-          onComplete={() => setShowProfileSetup(false)} 
+          onComplete={() => {
+            setShowProfileSetup(false);
+            // The user will be redirected to dashboard automatically
+          }} 
         />
       );
     }
@@ -67,10 +73,8 @@ function App() {
   return (
     <AuthPage 
       onAuthSuccess={() => {
-        // Check if user needs profile setup
-        if (user && (!user.name || !user.location)) {
-          setShowProfileSetup(true);
-        }
+        // User is authenticated, check if profile needs completion
+        // This will be handled by the auth state change and the checks above
       }}
       onNeedProfile={() => setShowProfileSetup(true)}
     />
