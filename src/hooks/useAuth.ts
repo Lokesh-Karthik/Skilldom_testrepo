@@ -68,6 +68,14 @@ export const useAuth = () => {
         }
         throw new Error(error);
       }
+      
+      // Set user immediately without waiting for auth state change
+      if (user) {
+        console.log('✅ Login successful, setting user immediately');
+        setUser(user);
+        setLoading(false);
+      }
+      
       return user;
     } finally {
       setAuthLoading(false);
@@ -138,6 +146,7 @@ export const useAuth = () => {
     try {
       const updatedUser = await authService.updateProfile(user.id, updates);
       if (updatedUser) {
+        console.log('✅ Profile updated, setting user immediately');
         setUser(updatedUser);
       }
       return updatedUser;

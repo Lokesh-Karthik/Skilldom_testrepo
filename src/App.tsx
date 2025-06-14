@@ -7,8 +7,8 @@ import { useAuth } from './hooks/useAuth';
 function App() {
   const { user, isAuthenticated, loading } = useAuth();
 
-  // Show loading spinner while checking auth state
-  if (loading) {
+  // Only show loading spinner on initial app load
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -32,13 +32,13 @@ function App() {
         <ProfileSetup 
           onComplete={() => {
             console.log('✅ Profile setup completed');
-            // The user state will be updated automatically
+            // The user will be redirected to dashboard automatically
           }} 
         />
       );
     }
 
-    // User is authenticated and profile is complete - show dashboard
+    // User is authenticated and profile is complete - show dashboard immediately
     console.log('✅ Showing dashboard for authenticated user');
     return <Dashboard />;
   }
