@@ -14,24 +14,29 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce'
-  },
-  db: {
-    schema: 'api'
   }
 });
 
 // Helper function to check connection
 export const testSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('user_profiles').select('count').limit(1);
+    console.log('🔄 Testing Supabase connection...');
+    
+    // Test basic connection with a simple query
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('count')
+      .limit(1);
+    
     if (error) {
-      console.error('Supabase connection error:', error);
-      return false;
+      console.error('❌ Supabase connection error:', error.message);
+      throw new Error(error.message);
     }
+    
     console.log('✅ Supabase connected successfully');
     return true;
-  } catch (error) {
-    console.error('❌ Failed to connect to Supabase:', error);
-    return false;
+  } catch (error: any) {
+    console.error('❌ Failed to connect to Supabase:', error.message);
+    throw error;
   }
 };
