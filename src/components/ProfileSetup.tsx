@@ -86,17 +86,20 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
         interests
       };
 
+      console.log('🔄 Updating profile with data:', updates);
       const updatedUser = await updateProfile(updates);
+      
       if (updatedUser) {
         setSuccess('Profile completed successfully! Redirecting to dashboard...');
-        // Redirect immediately to dashboard
+        // Force a page reload to ensure the user state is properly updated
         setTimeout(() => {
-          onComplete();
-        }, 1000);
+          window.location.reload();
+        }, 500);
       } else {
         setError('Failed to update profile. Please try again.');
       }
     } catch (err: any) {
+      console.error('❌ Profile update error:', err);
       setError(err.message || 'An error occurred while updating your profile');
     }
   };

@@ -58,36 +58,30 @@ class AuthService {
 
       console.log('✅ Auth user created:', authData.user.id);
 
-      // Create user profile in our custom table
-      const profileData = {
+      // For email confirmation flow, we don't create the profile immediately
+      // The profile will be created when the user confirms their email and completes setup
+      console.log('📧 Email confirmation required - profile will be created after confirmation');
+
+      // Return a basic user object for the confirmation flow
+      const user: User = {
         id: authData.user.id,
         email: userData.email,
         name: userData.name,
-        date_of_birth: userData.dateOfBirth || null,
-        gender: userData.gender || null,
-        school_or_job: userData.schoolOrJob || null,
-        location: userData.location || null,
-        bio: userData.bio || null
+        dateOfBirth: '',
+        gender: 'other',
+        schoolOrJob: '',
+        location: '',
+        bio: '',
+        profileImage: null,
+        skillsToTeach: [],
+        skillsToLearn: [],
+        interests: [],
+        connections: [],
+        pendingRequests: [],
+        sentRequests: [],
+        createdAt: new Date().toISOString()
       };
 
-      const { data: profileResult, error: profileError } = await supabase
-        .from('user_profiles')
-        .insert(profileData)
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error('❌ Profile creation error:', profileError);
-        return { user: null, error: 'Failed to create user profile: ' + profileError.message };
-      }
-
-      console.log('✅ User profile created successfully');
-
-      // Send welcome email
-      await this.sendWelcomeEmail(userData.email, userData.name);
-
-      // Convert to our User type
-      const user = await this.convertSupabaseUserToUser(authData.user, profileResult);
       return { user, error: null };
 
     } catch (error: any) {
@@ -261,7 +255,7 @@ class AuthService {
           const { data: { user } } = await supabase.auth.getUser();
           
           if (user && user.id === userId) {
-            // Create profile from auth user data
+            // Create basic profile from auth user data
             const newProfile = {
               id: user.id,
               email: user.email || '',
@@ -363,9 +357,55 @@ class AuthService {
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<User | null> {
     try {
-      console.log('🔄 Updating user profile...');
+      console.log('🔄 Updating user profile...', updates);
 
-      // Update basic profile
+      // First, ensure the user profile exists
+      let { data: existingProfile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Profile doesn't exist, create it first
+        console.log('🔄 Creating new profile...');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user || user.id !== userId) {
+          console.error('❌ User not authenticated');
+          return null;
+        }
+
+        const newProfile = {
+          id: userId,
+          email: user.email || '',
+          name: updates.name || user.user_metadata?.name || 'User',
+          date_of_birth: updates.dateOfBirth || null,
+          gender: updates.gender || null,
+          school_or_job: updates.schoolOrJob || null,
+          location: updates.location || null,
+          bio: updates.bio || null
+        };
+
+        const { data: createdProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert(newProfile)
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('❌ Failed to create profile:', createError);
+          return null;
+        }
+
+        existingProfile = createdProfile;
+        console.log('✅ Profile created successfully');
+      } else if (fetchError) {
+        console.error('❌ Error fetching profile:', fetchError);
+        return null;
+      }
+
+      // Update basic profile if there are changes
       const profileUpdates: any = {};
       if (updates.name !== undefined) profileUpdates.name = updates.name;
       if (updates.dateOfBirth !== undefined) profileUpdates.date_of_birth = updates.dateOfBirth;
@@ -385,6 +425,7 @@ class AuthService {
           console.error('❌ Profile update error:', profileError);
           return null;
         }
+        console.log('✅ Profile basic info updated');
       }
 
       // Update skills to teach
@@ -410,6 +451,8 @@ class AuthService {
 
           if (skillsError) {
             console.error('❌ Skills to teach update error:', skillsError);
+          } else {
+            console.log('✅ Skills to teach updated');
           }
         }
       }
@@ -435,6 +478,8 @@ class AuthService {
 
           if (skillsError) {
             console.error('❌ Skills to learn update error:', skillsError);
+          } else {
+            console.log('✅ Skills to learn updated');
           }
         }
       }
@@ -460,6 +505,8 @@ class AuthService {
 
           if (interestsError) {
             console.error('❌ Interests update error:', interestsError);
+          } else {
+            console.log('✅ Interests updated');
           }
         }
       }
