@@ -16,7 +16,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce'
   },
   db: {
-    schema: 'api'
+    schema: 'public'
   }
 });
 
