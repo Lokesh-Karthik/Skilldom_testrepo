@@ -58,11 +58,9 @@ class AuthService {
 
       console.log('✅ Auth user created:', authData.user.id);
 
-      // For email confirmation flow, we don't create the profile immediately
-      // The profile will be created when the user confirms their email and completes setup
+      // For email confirmation flow, return a basic user object with profileComplete: false
       console.log('📧 Email confirmation required - profile will be created after confirmation');
 
-      // Return a basic user object for the confirmation flow
       const user: User = {
         id: authData.user.id,
         email: userData.email,
@@ -79,7 +77,8 @@ class AuthService {
         connections: [],
         pendingRequests: [],
         sentRequests: [],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        profileComplete: false
       };
 
       return { user, error: null };
@@ -135,11 +134,7 @@ class AuthService {
 
       console.log('✅ User signed in:', data.user.id);
 
-      const user = await this.getUserProfile(data.user.id);
-      if (!user) {
-        return { user: null, error: 'User profile not found. Please contact support.' };
-      }
-
+      const user = await this.buildUserFromAuth(data.user);
       return { user, error: null };
 
     } catch (error: any) {
@@ -228,18 +223,79 @@ class AuthService {
         return null;
       }
 
-      return await this.getUserProfile(user.id);
+      return await this.buildUserFromAuth(user);
     } catch (error: any) {
       console.error('❌ Unexpected get current user error:', error);
       return null;
     }
   }
 
-  async getUserProfile(userId: string): Promise<User | null> {
+  private async buildUserFromAuth(authUser: SupabaseUser): Promise<User> {
+    try {
+      console.log('🔄 Building user from auth data for:', authUser.id);
+
+      // Try to get the full profile
+      const profile = await this.getUserProfile(authUser.id);
+      
+      if (profile) {
+        // Full profile exists, return it with profileComplete: true
+        return {
+          ...profile,
+          profileComplete: true
+        };
+      }
+
+      // No full profile exists, return basic user with profileComplete: false
+      console.log('⚠️ No full profile found, returning basic user');
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        dateOfBirth: '',
+        gender: 'other',
+        schoolOrJob: '',
+        location: '',
+        bio: '',
+        profileImage: null,
+        skillsToTeach: [],
+        skillsToLearn: [],
+        interests: [],
+        connections: [],
+        pendingRequests: [],
+        sentRequests: [],
+        createdAt: authUser.created_at || new Date().toISOString(),
+        profileComplete: false
+      };
+    } catch (error: any) {
+      console.error('❌ Error building user from auth:', error);
+      // Return basic user on error
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        dateOfBirth: '',
+        gender: 'other',
+        schoolOrJob: '',
+        location: '',
+        bio: '',
+        profileImage: null,
+        skillsToTeach: [],
+        skillsToLearn: [],
+        interests: [],
+        connections: [],
+        pendingRequests: [],
+        sentRequests: [],
+        createdAt: authUser.created_at || new Date().toISOString(),
+        profileComplete: false
+      };
+    }
+  }
+
+  private async getUserProfile(userId: string): Promise<User | null> {
     try {
       console.log('🔄 Fetching user profile for:', userId);
 
-      // Get user profile
+      // Get user profile - only fetch, don't create
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -247,45 +303,8 @@ class AuthService {
         .single();
 
       if (profileError) {
-        console.error('❌ Profile fetch error:', profileError);
-        
-        // If profile doesn't exist, try to create it from auth user
-        if (profileError.code === 'PGRST116') {
-          console.log('🔄 Profile not found, checking auth user...');
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          if (user && user.id === userId) {
-            // Create basic profile from auth user data
-            const newProfile = {
-              id: user.id,
-              email: user.email || '',
-              name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-              date_of_birth: null,
-              gender: null,
-              school_or_job: null,
-              location: null,
-              bio: null
-            };
-
-            const { data: createdProfile, error: createError } = await supabase
-              .from('user_profiles')
-              .insert(newProfile)
-              .select()
-              .single();
-
-            if (createError) {
-              console.error('❌ Failed to create profile:', createError);
-              return null;
-            }
-
-            console.log('✅ Profile created from auth user');
-            return await this.buildUserFromProfile(createdProfile, userId);
-          } else {
-            return null;
-          }
-        } else {
-          return null;
-        }
+        console.log('ℹ️ Profile not found or error:', profileError.message);
+        return null;
       }
 
       if (!profile) {
@@ -348,7 +367,8 @@ class AuthService {
       ) || [],
       pendingRequests: [], // We'll implement this separately
       sentRequests: [], // We'll implement this separately
-      createdAt: profile.created_at
+      createdAt: profile.created_at,
+      profileComplete: true
     };
 
     console.log('✅ User profile loaded successfully');
@@ -520,53 +540,13 @@ class AuthService {
     }
   }
 
-  private async sendWelcomeEmail(email: string, name: string): Promise<void> {
-    try {
-      console.log('🔄 Sending welcome email to:', email);
-      
-      // Note: In a real application, you would use a service like SendGrid, Mailgun, or Supabase Edge Functions
-      // For now, we'll just log that we would send an email
-      console.log(`📧 Welcome email would be sent to ${name} at ${email}`);
-      
-      // You could implement this using Supabase Edge Functions:
-      // const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-      //   body: { email, name }
-      // });
-      
-    } catch (error: any) {
-      console.error('❌ Failed to send welcome email:', error);
-      // Don't throw error as this is not critical for user registration
-    }
-  }
-
-  private async convertSupabaseUserToUser(supabaseUser: SupabaseUser, profileData: any): Promise<User> {
-    return {
-      id: supabaseUser.id,
-      email: profileData.email,
-      name: profileData.name,
-      dateOfBirth: profileData.date_of_birth || '',
-      gender: profileData.gender || 'other',
-      schoolOrJob: profileData.school_or_job || '',
-      location: profileData.location || '',
-      bio: profileData.bio || '',
-      profileImage: profileData.profile_image,
-      skillsToTeach: [],
-      skillsToLearn: [],
-      interests: [],
-      connections: [],
-      pendingRequests: [],
-      sentRequests: [],
-      createdAt: profileData.created_at || new Date().toISOString()
-    };
-  }
-
   // Listen to auth state changes
   onAuthStateChange(callback: (user: User | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state changed:', event);
       
       if (session?.user) {
-        const user = await this.getUserProfile(session.user.id);
+        const user = await this.buildUserFromAuth(session.user);
         callback(user);
       } else {
         callback(null);

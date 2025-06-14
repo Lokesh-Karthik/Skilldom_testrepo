@@ -4,10 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
-  onNeedProfile: () => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onNeedProfile }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);

@@ -15,6 +15,7 @@ export interface User {
   pendingRequests: string[];
   sentRequests: string[];
   createdAt: string;
+  profileComplete: boolean;
 }
 
 export interface Skill {

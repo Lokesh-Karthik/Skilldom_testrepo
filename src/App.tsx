@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AuthPage } from './components/AuthPage';
 import { ProfileSetup } from './components/ProfileSetup';
 import { Dashboard } from './components/Dashboard';
@@ -6,7 +6,6 @@ import { useAuth } from './hooks/useAuth';
 
 function App() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   // Show loading spinner while checking auth state
   if (loading) {
@@ -23,34 +22,16 @@ function App() {
     );
   }
 
-  // IMPORTANT: If user is authenticated, always prioritize showing the dashboard
-  // Only show profile setup if absolutely necessary (missing critical fields)
+  // If user is authenticated, check profile completeness
   if (isAuthenticated && user) {
-    console.log('✅ User is authenticated, checking profile completeness...');
+    console.log('✅ User is authenticated, profile complete:', user.profileComplete);
     
-    // Check if profile needs completion (only check absolutely essential fields)
-    const needsProfileSetup = !user.name || !user.location || !user.schoolOrJob;
-    
-    if (needsProfileSetup && !showProfileSetup) {
+    if (!user.profileComplete) {
       console.log('⚠️ Profile incomplete, showing setup...');
       return (
         <ProfileSetup 
           onComplete={() => {
             console.log('✅ Profile setup completed');
-            setShowProfileSetup(false);
-            // The user state will be updated automatically
-          }} 
-        />
-      );
-    }
-
-    // If we're in profile setup mode but user is authenticated
-    if (showProfileSetup) {
-      return (
-        <ProfileSetup 
-          onComplete={() => {
-            console.log('✅ Profile setup completed');
-            setShowProfileSetup(false);
             // The user state will be updated automatically
           }} 
         />
@@ -70,10 +51,6 @@ function App() {
         console.log('✅ Auth success callback triggered');
         // User state will be updated automatically via auth state listener
         // No need to force reload or manual state changes
-      }}
-      onNeedProfile={() => {
-        console.log('⚠️ Profile setup needed');
-        setShowProfileSetup(true);
       }}
     />
   );
