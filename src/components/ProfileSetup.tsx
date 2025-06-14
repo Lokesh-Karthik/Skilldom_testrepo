@@ -94,7 +94,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
         // Wait a moment for the success message to show, then complete
         setTimeout(() => {
           onComplete();
-        }, 1000);
+        }, 2000);
       } else {
         setError('Failed to update profile. Please try again.');
       }
