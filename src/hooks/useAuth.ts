@@ -16,6 +16,7 @@ export const useAuth = () => {
         const currentUser = await authService.getCurrentUser();
         if (isMounted) {
           setUser(currentUser);
+          console.log('🔄 Initial user loaded:', currentUser ? 'authenticated' : 'not authenticated');
         }
       } catch (error) {
         console.error('Error getting initial user:', error);
@@ -36,6 +37,10 @@ export const useAuth = () => {
       console.log('🔄 Auth state changed, user:', user ? 'authenticated' : 'not authenticated');
       if (isMounted) {
         setUser(user);
+        // If we get a user from auth state change, we're no longer loading
+        if (user) {
+          setLoading(false);
+        }
       }
     });
 

@@ -24,8 +24,9 @@ function App() {
     checkConnection();
   }, []);
 
-  // Show loading spinner only while checking auth and connection for the first time
-  if (loading || !connectionChecked) {
+  // Show loading spinner only while checking auth for the first time AND connection is not checked
+  // If user is authenticated, skip the connection loading screen
+  if ((loading || !connectionChecked) && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -41,7 +42,24 @@ function App() {
     );
   }
 
-  // Show profile setup if user needs to complete profile
+  // If user is authenticated and has complete profile, show dashboard immediately
+  if (isAuthenticated && user && user.profileComplete) {
+    return <Dashboard />;
+  }
+
+  // If user is authenticated but profile is incomplete, show profile setup
+  if (isAuthenticated && user && !user.profileComplete) {
+    return (
+      <ProfileSetup 
+        onComplete={() => {
+          setShowProfileSetup(false);
+          // The user will be redirected to dashboard automatically via auth state change
+        }} 
+      />
+    );
+  }
+
+  // Show profile setup if explicitly requested
   if (showProfileSetup) {
     return (
       <ProfileSetup 
@@ -53,29 +71,11 @@ function App() {
     );
   }
 
-  // Show dashboard immediately if authenticated and profile is complete
-  if (isAuthenticated && user) {
-    // Check if profile needs completion
-    if (!user.profileComplete) {
-      return (
-        <ProfileSetup 
-          onComplete={() => {
-            setShowProfileSetup(false);
-            // The user will be redirected to dashboard automatically
-          }} 
-        />
-      );
-    }
-    // User is authenticated and profile is complete - show dashboard immediately
-    return <Dashboard />;
-  }
-
-  // Default to auth page for unauthenticated users
+  // Default to auth page for unauthenticated users (only after connection is checked)
   return (
     <AuthPage 
       onAuthSuccess={() => {
-        // User is authenticated, check if profile needs completion
-        // This will be handled by the auth state change and the checks above
+        // User is authenticated, auth state change will handle the redirect
       }}
       onNeedProfile={() => setShowProfileSetup(true)}
     />
