@@ -253,6 +253,7 @@ class AuthService {
           profile.schoolOrJob.trim() !== ''
         );
         
+        console.log('✅ Full profile found, complete:', isComplete);
         return {
           ...profile,
           profileComplete: isComplete
@@ -551,9 +552,17 @@ class AuthService {
         }
       }
 
-      console.log('✅ Profile updated successfully');
-      // Return updated user profile
-      return await this.getUserProfile(userId);
+      console.log('✅ Profile updated successfully, fetching updated profile...');
+      
+      // Return updated user profile with profileComplete: true
+      const updatedUser = await this.getUserProfile(userId);
+      if (updatedUser) {
+        // Mark profile as complete since we just updated it
+        updatedUser.profileComplete = true;
+        console.log('✅ Profile marked as complete');
+      }
+      
+      return updatedUser;
     } catch (error: any) {
       console.error('❌ Unexpected update profile error:', error);
       return null;

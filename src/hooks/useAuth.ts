@@ -182,9 +182,10 @@ export const useAuth = () => {
     
     setAuthLoading(true);
     try {
+      console.log('🔄 Updating profile via useAuth...');
       const updatedUser = await authService.updateProfile(user.id, updates);
       if (updatedUser) {
-        console.log('✅ Profile updated, setting user immediately');
+        console.log('✅ Profile updated successfully, setting user state...');
         setUser(updatedUser);
       }
       return updatedUser;

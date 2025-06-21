@@ -90,11 +90,14 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ onComplete }) => {
       const updatedUser = await updateProfile(updates);
       
       if (updatedUser) {
+        console.log('✅ Profile created successfully! User:', updatedUser);
         setSuccess('Profile completed successfully! Redirecting to dashboard...');
+        
         // Wait a moment for the success message to show, then complete
         setTimeout(() => {
+          console.log('🔄 Calling onComplete to redirect to dashboard...');
           onComplete();
-        }, 2000);
+        }, 1500);
       } else {
         setError('Failed to update profile. Please try again.');
       }

@@ -41,32 +41,26 @@ function App() {
     );
   }
 
-  // Show profile setup if user needs to complete profile
-  if (showProfileSetup) {
+  // Handle profile completion callback
+  const handleProfileComplete = () => {
+    console.log('🔄 Profile setup completed, redirecting to dashboard...');
+    setShowProfileSetup(false);
+    // The user state will be updated automatically by the auth service
+    // and the dashboard will be shown when user.profileComplete becomes true
+  };
+
+  // Show profile setup if explicitly requested or if user needs to complete profile
+  if (showProfileSetup || (isAuthenticated && user && !user.profileComplete)) {
     return (
       <ProfileSetup 
-        onComplete={() => {
-          setShowProfileSetup(false);
-          // The user will be redirected to dashboard automatically
-        }} 
+        onComplete={handleProfileComplete}
       />
     );
   }
 
-  // Show dashboard immediately if authenticated and profile is complete
-  if (isAuthenticated && user) {
-    // Check if profile needs completion
-    if (!user.profileComplete) {
-      return (
-        <ProfileSetup 
-          onComplete={() => {
-            setShowProfileSetup(false);
-            // The user will be redirected to dashboard automatically
-          }} 
-        />
-      );
-    }
-    // User is authenticated and profile is complete - show dashboard immediately
+  // Show dashboard if authenticated and profile is complete
+  if (isAuthenticated && user && user.profileComplete) {
+    console.log('✅ User authenticated with complete profile, showing dashboard');
     return <Dashboard />;
   }
 
@@ -74,10 +68,14 @@ function App() {
   return (
     <AuthPage 
       onAuthSuccess={() => {
-        // User is authenticated, check if profile needs completion
-        // This will be handled by the auth state change and the checks above
+        console.log('🔄 Auth success callback triggered');
+        // User state will be updated automatically by the auth service
+        // If profile is incomplete, the checks above will handle showing ProfileSetup
       }}
-      onNeedProfile={() => setShowProfileSetup(true)}
+      onNeedProfile={() => {
+        console.log('🔄 Need profile callback triggered');
+        setShowProfileSetup(true);
+      }}
     />
   );
 }
