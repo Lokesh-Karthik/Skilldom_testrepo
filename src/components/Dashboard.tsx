@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MessageCircle, Users, User, Menu, X, Sparkles, LogOut, ChevronUp } from 'lucide-react';
+import { Search, MessageCircle, Users, User, Menu, X, Sparkles, LogOut, ChevronUp, TrendingUp } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useScrollDirection } from '../hooks/useScrollDirection';
 import { UserSearch } from './UserSearch';
 import { ConnectionRequests } from './ConnectionRequests';
 import { ChatInterface } from './ChatInterface';
 import { UserProfile } from './UserProfile';
+import { SkillDiscovery } from './SkillDiscovery';
 
-type TabType = 'discover' | 'connections' | 'messages' | 'profile';
+type TabType = 'discover' | 'connections' | 'messages' | 'profile' | 'skill-discovery';
 
 export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('discover');
@@ -17,6 +18,7 @@ export const Dashboard: React.FC = () => {
 
   const tabs = [
     { id: 'discover' as TabType, name: 'Discover', icon: Search },
+    { id: 'skill-discovery' as TabType, name: 'Start Skilling Up 📈', icon: TrendingUp },
     { id: 'connections' as TabType, name: 'Requests', icon: Users },
     { id: 'messages' as TabType, name: 'Messages', icon: MessageCircle },
     { id: 'profile' as TabType, name: 'Profile', icon: User },
@@ -26,6 +28,8 @@ export const Dashboard: React.FC = () => {
     switch (activeTab) {
       case 'discover':
         return <UserSearch />;
+      case 'skill-discovery':
+        return <SkillDiscovery />;
       case 'connections':
         return <ConnectionRequests />;
       case 'messages':
