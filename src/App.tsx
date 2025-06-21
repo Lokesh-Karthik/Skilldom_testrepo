@@ -24,9 +24,27 @@ function App() {
     checkConnection();
   }, []);
 
-  // Show loading spinner only while checking auth for the first time AND connection is not checked
-  // If user is authenticated, skip the connection loading screen
-  if ((loading || !connectionChecked) && !isAuthenticated) {
+  // If user is authenticated, prioritize showing their content immediately
+  // Don't wait for connection check if user is already authenticated
+  if (isAuthenticated && user) {
+    // Check if profile needs completion
+    if (!user.profileComplete) {
+      return (
+        <ProfileSetup 
+          onComplete={() => {
+            setShowProfileSetup(false);
+            // The user will be redirected to dashboard automatically via auth state change
+          }} 
+        />
+      );
+    }
+    // User is authenticated and profile is complete - show dashboard immediately
+    return <Dashboard />;
+  }
+
+  // Show loading spinner only while checking auth for the first time
+  // AND user is not authenticated AND connection is not checked
+  if (loading || (!isAuthenticated && !connectionChecked)) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -35,27 +53,10 @@ function App() {
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 blur-xl"></div>
           </div>
           <p className="text-gray-400 text-lg">
-            {!connectionChecked ? 'Connecting to database...' : 'Loading...'}
+            {loading ? 'Loading...' : 'Connecting to database...'}
           </p>
         </div>
       </div>
-    );
-  }
-
-  // If user is authenticated and has complete profile, show dashboard immediately
-  if (isAuthenticated && user && user.profileComplete) {
-    return <Dashboard />;
-  }
-
-  // If user is authenticated but profile is incomplete, show profile setup
-  if (isAuthenticated && user && !user.profileComplete) {
-    return (
-      <ProfileSetup 
-        onComplete={() => {
-          setShowProfileSetup(false);
-          // The user will be redirected to dashboard automatically via auth state change
-        }} 
-      />
     );
   }
 
