@@ -134,7 +134,7 @@ class AuthService {
 
       console.log('✅ User signed in:', data.user.id);
 
-      const user = await this.buildUserFromAuth(data.user);
+      const user = await this.buildUserFromAuthUser(data.user);
       return { user, error: null };
 
     } catch (error: any) {
@@ -223,11 +223,16 @@ class AuthService {
         return null;
       }
 
-      return await this.buildUserFromAuth(user);
+      return await this.buildUserFromAuthUser(user);
     } catch (error: any) {
       console.error('❌ Unexpected get current user error:', error);
       return null;
     }
+  }
+
+  // Public method to build user from auth user (used by useAuth hook)
+  async buildUserFromAuthUser(authUser: SupabaseUser): Promise<User | null> {
+    return await this.buildUserFromAuth(authUser);
   }
 
   private async buildUserFromAuth(authUser: SupabaseUser): Promise<User | null> {
@@ -529,16 +534,10 @@ class AuthService {
   }
 
   // Listen to auth state changes
-  onAuthStateChange(callback: (user: User | null) => void) {
+  onAuthStateChange(callback: (event: string, session: any) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state changed:', event);
-      
-      if (session?.user) {
-        const user = await this.buildUserFromAuth(session.user);
-        callback(user);
-      } else {
-        callback(null);
-      }
+      callback(event, session);
     });
   }
 }

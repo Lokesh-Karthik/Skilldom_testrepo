@@ -13,6 +13,7 @@ export const useAuth = () => {
     // Get initial user on mount
     const getInitialUser = async () => {
       try {
+        console.log('🔄 Getting initial user...');
         const currentUser = await authService.getCurrentUser();
         if (isMounted) {
           setUser(currentUser);
@@ -33,12 +34,37 @@ export const useAuth = () => {
     getInitialUser();
 
     // Listen to auth state changes
-    const { data: { subscription } } = authService.onAuthStateChange((user) => {
-      console.log('🔄 Auth state changed, user:', user ? 'authenticated' : 'not authenticated');
-      if (isMounted) {
-        setUser(user);
+    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event, session ? 'has session' : 'no session');
+      
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('✅ User signed in, building user profile...');
+        setLoading(true); // Show loading while building user profile
+        
+        try {
+          const user = await authService.buildUserFromAuthUser(session.user);
+          setUser(user);
+          console.log('✅ User profile built successfully:', user ? 'complete' : 'needs setup');
+        } catch (error) {
+          console.error('❌ Error building user profile:', error);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT' || !session) {
+        console.log('🔄 User signed out or no session');
+        setUser(null);
         setLoading(false);
-        // If we get a user from auth state change, we're no longer loading
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        console.log('🔄 Token refreshed, updating user...');
+        try {
+          const user = await authService.buildUserFromAuthUser(session.user);
+          setUser(user);
+        } catch (error) {
+          console.error('❌ Error updating user after token refresh:', error);
+        }
       }
     });
 
