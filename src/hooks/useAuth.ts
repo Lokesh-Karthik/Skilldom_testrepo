@@ -37,10 +37,8 @@ export const useAuth = () => {
       console.log('🔄 Auth state changed, user:', user ? 'authenticated' : 'not authenticated');
       if (isMounted) {
         setUser(user);
+        setLoading(false);
         // If we get a user from auth state change, we're no longer loading
-        if (user) {
-          setLoading(false);
-        }
       }
     });
 
