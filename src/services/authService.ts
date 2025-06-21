@@ -230,7 +230,7 @@ class AuthService {
     }
   }
 
-  private async buildUserFromAuth(authUser: SupabaseUser): Promise<User> {
+  private async buildUserFromAuth(authUser: SupabaseUser): Promise<User | null> {
     try {
       console.log('🔄 Building user from auth data for:', authUser.id);
 
@@ -254,49 +254,27 @@ class AuthService {
         };
       }
 
-      // No full profile exists, return basic user with profileComplete: false
-      console.log('⚠️ No full profile found, returning basic user for profile setup');
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-        dateOfBirth: '',
-        gender: 'other',
-        schoolOrJob: '',
-        location: '',
-        bio: '',
-        profileImage: authUser.user_metadata?.avatar_url || null,
-        skillsToTeach: [],
-        skillsToLearn: [],
-        interests: [],
-        connections: [],
-        pendingRequests: [],
-        sentRequests: [],
-        createdAt: authUser.created_at || new Date().toISOString(),
-        profileComplete: false
-      };
+      // No profile found in database - this means the user has a valid auth session
+      // but no corresponding profile record. This can happen if:
+      // 1. Profile was deleted from database but auth session still exists
+      // 2. There was an error during initial profile creation
+      // 3. Database was reset but auth users still exist
+      
+      console.log('⚠️ Auth user exists but no profile found in database. Clearing auth session...');
+      
+      // Sign out the user to clear the invalid session
+      await this.signOut();
+      
+      // Return null to trigger redirect to auth page
+      return null;
+
     } catch (error: any) {
       console.error('❌ Error building user from auth:', error);
-      // Return basic user on error
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-        dateOfBirth: '',
-        gender: 'other',
-        schoolOrJob: '',
-        location: '',
-        bio: '',
-        profileImage: authUser.user_metadata?.avatar_url || null,
-        skillsToTeach: [],
-        skillsToLearn: [],
-        interests: [],
-        connections: [],
-        pendingRequests: [],
-        sentRequests: [],
-        createdAt: authUser.created_at || new Date().toISOString(),
-        profileComplete: false
-      };
+      
+      // On any error, sign out the user and return null
+      console.log('⚠️ Error occurred, clearing auth session...');
+      await this.signOut();
+      return null;
     }
   }
 
