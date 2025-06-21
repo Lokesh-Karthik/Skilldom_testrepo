@@ -18,6 +18,9 @@ export const useAuth = () => {
         if (isMounted) {
           setUser(currentUser);
           console.log('🔄 Initial user loaded:', currentUser ? 'authenticated' : 'not authenticated');
+          if (currentUser) {
+            console.log('🔄 Profile complete:', currentUser.profileComplete);
+          }
         }
       } catch (error) {
         console.error('Error getting initial user:', error);
@@ -46,7 +49,10 @@ export const useAuth = () => {
         try {
           const user = await authService.buildUserFromAuthUser(session.user);
           setUser(user);
-          console.log('✅ User profile built successfully:', user ? 'complete' : 'needs setup');
+          console.log('✅ User profile built successfully:', user ? 'found' : 'not found');
+          if (user) {
+            console.log('🔄 Profile complete:', user.profileComplete);
+          }
         } catch (error) {
           console.error('❌ Error building user profile:', error);
           setUser(null);

@@ -24,27 +24,8 @@ function App() {
     checkConnection();
   }, []);
 
-  // Priority 1: If user is authenticated and has complete profile, show dashboard immediately
-  if (isAuthenticated && user && user.profileComplete) {
-    return <Dashboard />;
-  }
-
-  // Priority 2: If user is authenticated but profile is incomplete, show profile setup
-  if (isAuthenticated && user && !user.profileComplete) {
-    return (
-      <ProfileSetup 
-        onComplete={() => {
-          setShowProfileSetup(false);
-          // The user will be redirected to dashboard automatically via auth state change
-        }} 
-      />
-    );
-  }
-
-  // Priority 3: Show loading only when:
-  // - Auth is loading AND we don't have a user yet
-  // - OR connection is not checked yet AND user is not authenticated
-  if (loading || (!isAuthenticated && !connectionChecked)) {
+  // Show loading spinner while checking auth and connection for the first time
+  if (loading || !connectionChecked) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -53,14 +34,14 @@ function App() {
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 blur-xl"></div>
           </div>
           <p className="text-gray-400 text-lg">
-            {loading ? 'Authenticating...' : 'Connecting to database...'}
+            {!connectionChecked ? 'Connecting to database...' : 'Loading...'}
           </p>
         </div>
       </div>
     );
   }
 
-  // Priority 4: Show profile setup if explicitly requested
+  // Show profile setup if user needs to complete profile
   if (showProfileSetup) {
     return (
       <ProfileSetup 
@@ -72,11 +53,29 @@ function App() {
     );
   }
 
-  // Priority 5: Default to auth page for unauthenticated users
+  // Show dashboard immediately if authenticated and profile is complete
+  if (isAuthenticated && user) {
+    // Check if profile needs completion
+    if (!user.profileComplete) {
+      return (
+        <ProfileSetup 
+          onComplete={() => {
+            setShowProfileSetup(false);
+            // The user will be redirected to dashboard automatically
+          }} 
+        />
+      );
+    }
+    // User is authenticated and profile is complete - show dashboard immediately
+    return <Dashboard />;
+  }
+
+  // Default to auth page for unauthenticated users
   return (
     <AuthPage 
       onAuthSuccess={() => {
-        // User is authenticated, auth state change will handle the redirect
+        // User is authenticated, check if profile needs completion
+        // This will be handled by the auth state change and the checks above
       }}
       onNeedProfile={() => setShowProfileSetup(true)}
     />
